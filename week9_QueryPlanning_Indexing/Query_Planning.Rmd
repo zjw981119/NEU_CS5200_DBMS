@@ -1,0 +1,257 @@
+---
+title: "Query Planning and Indexing"
+output: html_notebook
+### Author: Zhang, Jinwei
+### Course: CS5200
+### Term: 2023 Spring
+---
+
+### connect db
+```{r}
+library(RSQLite)
+
+# connect to sqlite db
+wd = getwd()
+fpath = paste0(wd, "/")
+dbfile = "sakila_sqlite.db"
+
+SQLite_Con <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+
+# connect to mysql db
+library(DBI)
+library(RMySQL)
+MySQL_Con <- dbConnect(MySQL(), user = 'root', password = 'root',
+                 dbname = 'sakila', host = 'localhost', port = 3306)
+```
+
+### list all existing indexes of SQLite sakila database
+```{sql connection=SQLite_Con}
+SELECT
+   `type`, 
+   `name`, 
+   `tbl_name`, 
+   `sql`
+  FROM sqlite_master
+WHERE `type` = 'index';
+```
+
+### list all existing indexes of MySQL sakila database
+```{sql connection=MySQL_Con}
+SELECT DISTINCT
+    TABLE_NAME,
+    INDEX_NAME
+FROM INFORMATION_SCHEMA.STATISTICS
+WHERE TABLE_SCHEMA = 'sakila';
+```
+
+# Q1. query on a single table with a WHERE clause that is not the primary key but has an index; 
+```{sql connection=SQLite_Con}
+SELECT * FROM film LIMIT 10;
+```
+
+## SQLite database
+### Create index if not exist
+```{sql connection=SQLite_Con}
+CREATE INDEX IF NOT EXISTS idx_release_year ON film(release_year);
+```
+
+### Query a non-primary attribute with index
+```{sql connection=SQLite_Con}
+EXPLAIN QUERY PLAN
+SELECT * FROM film
+  WHERE release_year = 2005;
+```
+### drop index
+```{sql connection=SQLite_Con}
+DROP INDEX IF EXISTS idx_release_year;
+```
+
+### Query a non-primary attribute without index
+```{sql connection=SQLite_Con}
+EXPLAIN QUERY PLAN
+SELECT * FROM film
+  WHERE release_year = 2005;
+```
+
+## MySQL database
+### Create index 
+```{sql connection=MySQL_Con}
+CREATE INDEX idx_release_year ON film(release_year);
+```
+
+### Query a non-primary attribute without index
+```{sql connection=MySQL_Con}
+EXPLAIN SELECT * FROM film
+  WHERE release_year = 2005;
+```
+### drop index
+```{sql connection=MySQL_Con}
+DROP INDEX idx_release_year ON film;
+```
+
+
+### Query a non-primary attribute without index
+```{sql connection=MySQL_Con}
+EXPLAIN SELECT * FROM film
+  WHERE release_year = 2005;
+```
+## Findings from Q1
+### Comparisons
+- For SQLite database: It will use the created index(on the non-primary attribute) for query optimization. Otherwise, it will scan the whole table to find the matched records.
+
+- For MySQL database: It will use the created index(on the non-primary attribute) for query optimization. Otherwise, it will scan the whole table to find the matched records.
+
+### Findings
+If the created index is listed in the possible_keys column, it means that the query optimizer has recognized the index as a potential option for optimizing the query. However, the query optimizer considers many factors when deciding how to execute a query, such as the selectivity of the index, the size of the table, and the complexity of the query, thus it may not always choose to use the index, even if it is listed in the possible_keys column.
+
+Although the query plans regarding the above SQL sentence in these two databases are same, there're still some factors that may cause them to behave differently: (1) SQLite and MySQL have different query optimizers, the ways they examine the performance of a query is different, and they may choose different execution plans for the same query; (2) SQLite uses a different storage engine than MySQL, which can affect the ways they store data and access data through an index.
+
+# Q2. query with a join on at least three tables (no secondary indexes; no where clause other than join clause) 
+## SQLite database
+### Create indexes for primary attributes
+```{sql connection=SQLite_Con}
+CREATE INDEX IF NOT EXISTS idx_pk_staff_id ON staff(staff_id);
+```
+
+```{sql connection=SQLite_Con}
+CREATE INDEX IF NOT EXISTS idx_pk_rental_id ON rental(rental_id);
+```
+
+```{sql connection=SQLite_Con}
+CREATE INDEX IF NOT EXISTS idx_pk_customer_id ON customer(customer_id);
+```
+
+### Create indexes for foreign key attributes
+```{sql connection=SQLite_Con}
+CREATE INDEX IF NOT EXISTS idx_fk_staff_id ON payment(staff_id);
+```
+
+```{sql connection=SQLite_Con}
+CREATE INDEX IF NOT EXISTS idx_fk_customer_id ON payment(customer_id);
+```
+
+```{sql connection=SQLite_Con}
+CREATE INDEX IF NOT EXISTS fk_payment_rental ON payment(rental_id);
+```
+
+### Join payment, staff, rental and customer tables in SQLite
+```{sql connection=SQLite_Con}
+EXPLAIN QUERY PLAN
+SELECT * FROM payment p
+  JOIN staff s ON s.staff_id = p.staff_id
+  JOIN rental r ON r.rental_id = p.rental_id
+  JOIN customer c ON c.customer_id = p.customer_id;
+```
+
+## MySQL database
+### Join payment, staff, rental and customer tables in MySQL
+```{sql connection=MySQL_Con}
+EXPLAIN SELECT * FROM payment p
+  JOIN staff s ON s.staff_id = p.staff_id
+  JOIN rental r ON r.rental_id = p.rental_id
+  JOIN customer c ON c.customer_id = p.customer_id;
+```
+
+## Findings from Q2
+### Comparisons
+- For SQLite database: The query scans the full payment table and uses primary indexes(for attributes staff_id, rental_id, and customer_id) to look up matched records in staff, rental and customer table respectively, then join those tables.
+
+- For MySQL database:
+  - It starts by performing a full table scan of the staff table, reading all of the rows from the table into memory. 
+  - For each row in the staff table, MySQL use the value of the staff_id column to search the idx_fk_staff_id index in the payment table. During the process, MySQL uses the WHERE clause to filter the rows in the payment table that match the staff_id values from the staff table.
+  - However, for rental_id and customer_id, it scans the full table of payment, and use the primary indexes to look up matched records from the rental table and customer table.
+  - Finally, MySQL complets the joining process and returns the resulting set of rows as the output of the query.
+
+### Findings
+A foreign key always requires an index. Without an index enforcing the constraint would require a full table scan on the referenced table for every inserted or updated key in the referencing table. MySQL will automatically create the foreign key indexes while creating tables and they can't be dropped if the foreign key constraints exist.
+
+If a table is small enough, MySQL may choose to scan the entire table instead of using an index to look up the rows, especially if the index is not selective enough or if the table has a low number of rows.
+
+# Q3. query on a single table with group by having a where clause that involves only the primary key column
+
+## SQLite database
+### Create index for primary key if not exist
+```{sql connection=SQLite_Con}
+CREATE INDEX IF NOT EXISTS idx_pk_film_id ON film(film_id);
+```
+
+### Query film table
+```{sql connection=SQLite_Con}
+EXPLAIN QUERY PLAN
+SELECT COUNT(film_id) FROM film
+  WHERE film_id <= 500
+  GROUP BY rental_duration;
+```
+
+## MySQL database
+### Query film table
+```{sql connection=MySQL_Con}
+EXPLAIN 
+SELECT COUNT(film_id) FROM film
+  WHERE film_id <= 500
+  GROUP BY rental_duration;
+```
+## Findings from Q3
+### Comparisons
+- For SQLite database:
+  - The query uses a "less than" comparison operator in its WHERE clause to filter the rows with rowid < 501.
+  - It creates a temporary table in memory to store the results of grouping the rows by rental_duration and uses this temporary table to calculate the count for each distinct rental_duration value.
+
+- For MySQL database:
+  - MySQL first calculates the index range for the WHERE condition(film_id <= 500), then do a index range scan to quickly find the matched rows. 
+  - MySQL then creates a temporary table to group results, which is similar to SQLite.
+
+### Findings
+MySQL performs an index range scan, it first calculates the index range based on the WHERE condition film_id <= 500, and only scans the indexes within that index range(from where it can get the related rows). This is more efficient than a full index scan because it only has to read a subset of the index.
+
+SQLite does not specify whether the index is being scanned in full or range.
+However, even if it performs an index full scan, which is similar to scanning the full table, but is more efficient because it only has to read the index and not the entire table---it only reads the film_id values and the corresponding rowids related to that index.
+
+# Q4. one additional experiment of your choice: any query, any index use -- be creative and investigate
+
+## SQLite database
+### Create index if not exist
+```{sql connection=SQLite_Con}
+CREATE INDEX IF NOT EXISTS idx_title ON film(title);
+```
+
+### Query film table using 'LIKE' with index
+```{sql connection=SQLite_Con}
+EXPLAIN QUERY PLAN
+SELECT * FROM film
+  WHERE title LIKE 'AL%';
+```
+## MySQL database
+### Create index if not exist
+```{sql connection=MySQL_Con}
+CREATE INDEX idx_title ON film(title);
+```
+
+### Query film table using 'LIKE' with index
+```{sql connection=MySQL_Con}
+EXPLAIN
+SELECT * FROM film
+  WHERE title LIKE 'AL%';
+```
+## Findings from Q4
+### Comparisons
+- For SQLite database: The query scans the whole table to find the matched rows.
+
+- For MySQL database:
+  - MySQL builds a B-tree data structure that stores the indexed values in sorted order. Then it use the index to quickly find the first index entry that has a value greater than or equal to 'AL' by traversing the B-tree from the root node to the appropriate leaf node.
+  - Once the database has located the starting point of the range, it can traverse the index sequentially to find all the subsequent entries that have values that start with 'AL', which is an index range scan.
+
+### Findings
+The specific algorithm for finding the starting point of the range may depend on various factors, such as the size of the index and the specific version of the database engine. 
+
+However, the basic idea is to use the B-tree structure to efficiently locate the starting point of the range and then traverse the index sequentially to find all the subsequent entries that match the filter condition.
+
+If the string after LIKE becomes '%AL%' or '_AL%', MySQL will scan the full table to find the matched rows, because it doesn't know the first letter of the title, thus using the index will not improve the efficiency.
+
+Moreover, the factors which may cause the two databases behave differently were discussed in Q1.
+
+### disconnect db
+```{r}
+dbDisconnect(SQLite_Con)
+dbDisconnect(MySQL_Con)
+```

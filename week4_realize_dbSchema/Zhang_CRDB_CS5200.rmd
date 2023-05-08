@@ -1,0 +1,141 @@
+---
+title: "Creating a new SQLite database using code chunks"
+output: html_notebook
+### Author: Zhang, Jinwei
+### Course: CS5200
+### Term: 2023 Spring
+---
+
+# create connection to db
+```{r}
+library(RSQLite)
+
+# get current work directory
+wd = getwd()
+fpath = paste0(wd, "/")
+dbfile = "asgmtDB.sqlite"
+
+# create db or get db connection
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+```
+
+# enable foreign key constraint
+```{sql connection=dbcon}
+PRAGMA foreign_keys = ON
+```
+
+# initialization
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS Module;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS Affiliation;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS Author;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS AuthorToModule;
+```
+
+# create tables
+```{sql connection=dbcon}
+CREATE TABLE Module(
+  number TEXT NOT NULL PRIMARY KEY,
+  title TEXT NOT NULL,
+  lengthInMin INTEGER NOT NULL
+);
+```
+
+# Look-up table for categorical attribute in Author table
+```{sql connection=dbcon}
+CREATE TABLE Affiliation(
+  aff_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  status TEXT NOT NULL UNIQUE
+);
+```
+
+# insert predefined data
+```{sql connection=dbcon}
+INSERT INTO Affiliation(status) VALUES
+  ("PT"),
+  ("FT"),
+  ("Contract");
+```
+
+```{sql connection=dbcon}
+CREATE TABLE Author(
+  aid INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  aff_id INTEGER NOT NULL,
+  FOREIGN KEY (aff_id) REFERENCES Affiliation(aff_id)
+);
+```
+
+# mapping table for Author and Module
+```{sql connection=dbcon}
+CREATE TABLE AuthorToModule(
+  a2m_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  number TEXT NOT NULL,
+  aid INTEGER NOT NULL,
+  FOREIGN KEY (number) REFERENCES Module(number),
+  FOREIGN KEY (aid) REFERENCES Author(aid)
+);
+```
+
+# insert data for testing
+```{sql connection=dbcon}
+INSERT INTO Module(number, title, lengthInMIN) VALUES
+  ("1", "module1", -1),
+  ("2", "module2", 45),
+  ("3", "module3", 50);
+```
+
+```{sql connection=dbcon}
+INSERT INTO Author(name, email, aff_id) VALUES
+  ("Mike", "mike@test.com", 1),
+  ("Siri", "siri@test.com", 1),
+  ("Jerry", "jerry@test.com", 2),
+  ("Tom", "tom@test.com", 3);
+```
+
+```{sql connection=dbcon}
+INSERT INTO AuthorToModule(number, aid) VALUES
+  ("1", 1),
+  ("2", 2),
+  ("3", 3);
+```
+
+```{sql connection=dbcon}
+SELECT * from Module;
+```
+
+```{sql connection=dbcon}
+SELECT * from Affiliation;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM Author;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM AuthorToModule;
+```
+
+# test join
+```{sql connection=dbcon}
+SELECT Author.aid, Author.name, Author.email, Affiliation.status, Module.title, Module.lengthInMin FROM AuthorToModule
+  INNER JOIN Author ON Author.aid = AuthorToModule.aid,
+             Module ON Module.number = AuthorToModule.number,
+             Affiliation ON Author.aff_id = Affiliation.aff_id;
+```
+
+# discconect db
+```{r}
+dbDisconnect(dbcon)
+```
+

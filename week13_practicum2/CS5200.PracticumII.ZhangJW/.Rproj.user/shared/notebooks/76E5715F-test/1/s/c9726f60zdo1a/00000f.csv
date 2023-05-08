@@ -1,0 +1,5 @@
+"0","dbWriteTable(dbcon2, ""journal_dim"", journal_dim, append = T, row.names = FALSE)"
+"1","[1]"
+"1"," TRUE"
+"1","
+"

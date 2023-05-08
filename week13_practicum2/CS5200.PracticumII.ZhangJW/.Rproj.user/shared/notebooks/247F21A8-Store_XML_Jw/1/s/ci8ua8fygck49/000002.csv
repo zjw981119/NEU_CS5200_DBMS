@@ -1,0 +1,11 @@
+"0","```r
+library(XML)
+wd = getwd()
+fpath = paste0(wd, \"/\")
+# read XML file
+xmlFile <- paste0(fpath, \"Books-v3.xml\")
+xmlObj <- xmlParse(xmlFile)
+# get the size of DOM
+r <- xmlRoot(xmlObj)
+size <- xmlSize(r)
+```"

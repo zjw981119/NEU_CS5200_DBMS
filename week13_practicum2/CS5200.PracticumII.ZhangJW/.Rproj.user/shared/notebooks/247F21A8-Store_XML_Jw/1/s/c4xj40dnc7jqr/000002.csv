@@ -1,0 +1,19 @@
+"0","```r
+# stringsAsFactors=F tells R not to convert character vectors into factors when creating a data frame
+BookDetail <- data.frame(title = character(),
+                         author = character(), 
+                         genre = character(),
+                         price = numeric(),
+                         description = character(),
+                         stringsAsFactors = F)
+
+EditionDetail <- data.frame(eid = integer(),
+                            edition = integer(), 
+                            publish_date = character(),
+                            stringsAsFactors = F)
+
+Book <- data.frame(bid = integer(),
+                   title = character(), 
+                   eid = integer(),
+                   stringsAsFactors = F)
+```"

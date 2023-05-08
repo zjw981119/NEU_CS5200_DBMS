@@ -1,0 +1,7 @@
+"0","```sql
+CREATE TABLE conditions(
+  cid INT PRIMARY KEY AUTO_INCREMENT,
+  sky_conditions VARCHAR(30) UNIQUE,
+  explanation VARCHAR(50) DEFAULT ''
+);
+```"

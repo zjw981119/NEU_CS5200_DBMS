@@ -1,0 +1,13 @@
+"0","dbDisconnect(dbcon)"
+"2","Warning message:
+"
+"2","In .local(conn, statement, ...) :"
+"2","
+ "
+"2"," Decimal MySQL column 3 imported as numeric
+"
+"0","dbDisconnect(dbcon2)"
+"1","[1]"
+"1"," TRUE"
+"1","
+"

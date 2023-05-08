@@ -1,0 +1,7 @@
+"0","# drop author_fact table if exists"
+"0","drop_table_sql <- ""DROP TABLE IF EXISTS author_fact"""
+"0","dbExecute(dbcon2, drop_table_sql)"
+"1","[1]"
+"1"," 0"
+"1","
+"

@@ -1,0 +1,10 @@
+"0","```r
+# import ggplot2 library for drawing column graph
+library(ggplot2)
+cmd <- \"SELECT SUBSTR(flight_date, 1, 4) AS year, COUNT(rid) as total FROM incidents 
+          GROUP BY year
+          HAVING year >= '2005' AND year <= '2011'
+          ORDER BY year;\"
+rs <- dbGetQuery(dbcon, cmd)
+rs
+```"

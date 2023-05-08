@@ -1,0 +1,9 @@
+"0","```sql
+CREATE TABLE IF NOT EXISTS BookDetail(
+  title TEXT NOT NULL PRIMARY KEY,
+  author TEXT,
+  genre TEXT,
+  price NUMERIC,
+  description TEXT
+);
+```"

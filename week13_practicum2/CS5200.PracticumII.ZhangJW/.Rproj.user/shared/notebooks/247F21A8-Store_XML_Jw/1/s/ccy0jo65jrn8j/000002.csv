@@ -1,0 +1,38 @@
+"0","```r
+bdIdx <- 1
+edIdx <- 1
+bkIdx <- 1
+for (i in 1:size){
+  # get current book
+  curBookNode <- r[[i]]
+  
+  # new title, add to BookDetail data frame
+  title <- xpathSApply(curBookNode, \"./title\", xmlValue)
+  if(checkTitle(title) == -1){
+    BookDetail[bdIdx,] <- parseBookDetail(curBookNode)
+    bdIdx <- bdIdx + 1
+  }
+  
+  edition <- xpathSApply(curBookNode, \"./edition\", xmlValue)
+  publish_date <- xpathSApply(curBookNode, \"./publish_date\", xmlValue)
+  # no edition, default 1
+  if(length(edition) != 1){
+    edition <- as.integer(1)
+  } else {
+    edition <- as.integer(edition)
+  }
+  # new edition detail, add to EditionDetail data frame
+  if(checkEdition(edition, publish_date) == -1){
+    eid <- as.integer(edIdx)
+    EditionDetail[edIdx,] <- data.frame(eid, edition, publish_date, stringsAsFactors = F)
+    edIdx <- edIdx + 1
+  }
+  
+  # add to Book dataframe
+  bid <- xmlAttrs(r[[i]])[[1]]
+  # get the eid
+  eid <- checkEdition(edition, publish_date)
+  Book[bkIdx,] <- data.frame(bid, title, eid, stringsAsFactors = F)
+  bkIdx <- bkIdx + 1
+}
+```"

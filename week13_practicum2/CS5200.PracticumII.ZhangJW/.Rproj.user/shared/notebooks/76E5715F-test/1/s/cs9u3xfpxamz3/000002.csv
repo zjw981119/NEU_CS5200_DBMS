@@ -1,0 +1,2 @@
+"0","SELECT * FROM journal_fact
+  INNER JOIN journal_dim ON journal_fact.issn = journal_dim.issn;"

@@ -1,0 +1,92 @@
+---
+title: "Query Databases and Dataframes in R with SQL"
+output: html_notebook
+### Author: Zhang, Jinwei
+### Course: CS5200
+### Term: 2023 Spring
+---
+
+# initialization
+```{r}
+library(RSQLite)
+library(sqldf)
+# get current work directory
+wd = getwd()
+fpath = paste0(wd, "/")
+dbfile = "MediaDB.db"
+
+# create db or get db connection
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+```
+
+# Q1: insert column ExtPrice into invoice_items table, get the avg of inserted column
+```{r}
+sqlQuery <- 'SELECT * FROM invoice_items'
+rs <- dbGetQuery(dbcon,sqlQuery)
+rs$ExtPrice <- rs$Quantity * rs$UnitPrice
+avg <- round(mean(rs$ExtPrice), 2)
+rs
+avg
+```
+
+# Q2: use sqldf to write query against rs
+# display invoice ID, the total, and the number of items.
+```{r}
+rs2 <- sqldf('SELECT InvoiceId, SUM(ExtPrice) AS total, COUNT(*) AS num 
+                FROM rs 
+                GROUP BY InvoiceId')
+rs2
+```
+
+# Q3: create a scatter plot
+# total number of items in an invoice (x axis) versus the total (y axis)
+```{r}
+xData <- rs2$num
+yData <- rs2$total
+# change point to shape 19, remove frame of plot
+plot(xData, yData, main = 'Invoice Plot',
+     xlab = 'Number of Items', ylab = 'Total Amount',
+     pch = 19, frame = FALSE)
+```
+
+
+# NOTE: only for testing -- drop the column first if exists
+```{r}
+alterStatement <- 'ALTER TABLE invoices DROP COLUMN DiscPrice'
+dbExecute(dbcon, alterStatement)
+```
+
+# Q4
+# add column DiscPrice to invoices table
+```{r}
+alterStatement <- 'ALTER TABLE invoices ADD DiscPrice NUMERIC'
+dbExecute(dbcon, alterStatement)
+```
+
+# update records
+# applies a 10% discount to the total amount for each invoice if it has more than 5 items
+```{r}
+updateStatement <- '
+UPDATE invoices 
+SET DiscPrice = Total * 0.9
+WHERE InvoiceId IN(SELECT InvoiceId FROM invoice_items 
+                   GROUP BY InvoiceId 
+                   HAVING COUNT(*) > 5)
+'
+dbExecute(dbcon, updateStatement)
+
+```
+
+# Q5: show that the update in (4) executed properly by displaying a part of the table. 
+```{r}
+sqlQuery2 <- '
+SELECT InvoiceId, CustomerId, Total, DiscPrice FROM invoices 
+  WHERE DiscPrice IS NOT NULL 
+  LIMIT 30'
+rs4 <- dbGetQuery(dbcon,sqlQuery2)
+rs4
+```
+
+```{r}
+dbDisconnect(dbcon)
+```

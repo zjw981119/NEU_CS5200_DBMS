@@ -1,0 +1,7 @@
+"0","```sql
+SELECT COUNT(genre) AS num FROM 
+  (SELECT genre FROM Book b
+    JOIN BookDetail bd ON b.title = bd.title
+    GROUP BY genre
+    HAVING COUNT(bid) >= 3)
+```"

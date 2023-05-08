@@ -1,0 +1,4 @@
+"0","```r
+conditions <- sqldf('SELECT DISTINCT sky_conditions FROM bird_strikes')
+conditions
+```"

@@ -1,0 +1,7 @@
+"0","```sql
+SELECT DISTINCT title, author FROM BookDetail
+  WHERE price < 0.8*(SELECT AVG(price) FROM Book b 
+                      JOIN BookDetail bd ON b.title = bd.title) 
+  OR price > 1.2*(SELECT AVG(price) FROM Book b 
+                    JOIN BookDetail bd ON b.title = bd.title);
+```"

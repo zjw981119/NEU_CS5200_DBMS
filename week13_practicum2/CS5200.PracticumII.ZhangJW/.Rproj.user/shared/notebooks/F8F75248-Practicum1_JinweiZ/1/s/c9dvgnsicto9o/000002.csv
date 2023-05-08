@@ -1,0 +1,12 @@
+"0","```r
+airports <- sqldf('SELECT DISTINCT airport AS airport_name, origin AS state 
+                    FROM bird_strikes
+                    ORDER BY state')
+
+# omit rows with airport_name be empty
+# airports <- airports[!(airports$airport_name == ''),]
+
+# if the state is N/A, the airport is not reside within USA, leave it empty
+airports$state[airports$state == 'N/A'] <- ''
+airports
+```"

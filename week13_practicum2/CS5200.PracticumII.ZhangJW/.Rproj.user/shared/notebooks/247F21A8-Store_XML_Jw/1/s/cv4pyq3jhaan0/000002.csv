@@ -1,0 +1,14 @@
+"0","```r
+parseBookDetail <- function(curNode)
+{
+  # if using //book/title, even pass the single node, it will extract titles of the whole document
+  title <- xpathSApply(curNode, \"./title\", xmlValue)
+  author <- xpathSApply(curNode, \"./author\", xmlValue)
+  genre <- xpathSApply(curNode, \"./genre\", xmlValue)
+  price <- as.numeric(xpathSApply(curNode, \"./price\", xmlValue))
+  description <- xpathSApply(curNode, \"./description\", xmlValue)
+  
+  newBookDetail.df <- data.frame(title, author, genre, price, description, stringsAsFactors = F)
+  return(newBookDetail.df)
+}
+```"

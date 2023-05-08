@@ -1,0 +1,56 @@
+---
+title: "R Notebook"
+output: html_notebook
+# Author: Zhang, Jinwei
+# Course: CS5200
+# Term: 2023 Spring
+# Date: 2023-04-18
+---
+
+## Part 3 (20 pts) Explore and Mine Data
+Based on the star schema I created for author fact table and journal fact table, we can easily write SQL queries against MySQL data warehouse for the purpose of analysis:
+
+### Top ten authors with the most publications.
+Note: The SQL query will break ties by full_name in lexicographical order
+```{sql connection=dbcon2}
+SELECT 
+  CONCAT(first_name, ' ', last_name) AS full_name,
+  article_count
+  FROM author_fact
+  ORDER BY article_count DESC, full_name ASC
+  LIMIT 10
+```
+
+As shown in the result set, the top ten authors with most publications are E Costa(37 articles), E D Thomas(34 articles), A H Beckett(32 articles), R Storb(31 articles), S H Snyder(26 articles), R J Lefkowitz(25 articles), P L Weiden(24 articles), A Meister(23 articles), P Mandel(23 articles), P A Janssen(22) articles. 
+
+#  Top journal with the most articles per year.
+ROW_NUMBER() is an order sensitive function, the ORDER BY clause is required.
+PARTITION BY clause divides the result set returned from the FROM clause into partitions
+Finally, each row in each partition is assigned a sequential integer number called a row number
+```{sql connection=dbcon2}
+SELECT year, issn, title, total_articles
+  FROM (
+    WITH cte AS (
+      SELECT year, issn, title, SUM(article_count) AS total_articles
+      FROM journal_fact
+      GROUP BY year, issn, title
+    )
+    SELECT year, issn, title, total_articles,
+      ROW_NUMBER() OVER (PARTITION BY year ORDER BY total_articles DESC) AS rn
+    FROM cte
+  ) t
+  WHERE rn = 1
+  ORDER BY year ASC;
+```
+As shown in the result set, the top journals with the most articles are from year 1975 to 1979 are:
+1975: Annales de l'anesthesiologie francaise, with 146 articles;
+1976: The Journal of pharmacy and pharmacology, with 362 articles;
+1977: The Journal of pharmacy and pharmacology, with 320 articles;
+1978: The Journal of pharmacy and pharmacology, with 217 articles;
+1979: Gastroenterology, with 1 article(since there's only one article published in year 1979)
+
+# Close the database connection
+```{r}
+dbDisconnect(dbcon)
+dbDisconnect(dbcon2)
+```

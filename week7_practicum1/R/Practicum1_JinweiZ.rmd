@@ -1,0 +1,430 @@
+---
+title: "R Notebook"
+output: html_notebook
+### Author: Zhang, Jinwei
+### Email: zhang.jinw@northeastern.edu
+### Course: CS5200
+### Term: 2023 Spring
+---
+
+# create connection to MySQL db
+```{r}
+library(DBI)
+library(RMySQL)
+# use readr to load csv file
+library(readr)
+# forces sqldf to use SQLite as its backing store
+library(sqldf)
+options(sqldf.driver = 'SQLite')
+
+dbcon <- dbConnect(MySQL(), user = 'root', password = 'root',
+                 dbname = 'bird_strike', host = 'localhost', port = 3306)
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS incidents;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS airports;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS conditions;
+```
+
+# Task1B: Create airports table
+# The assumption is that using only airport_name can't determine the whole record
+# airports in different state may have same name
+```{sql connection=dbcon}
+CREATE TABLE airports(
+  aid INT PRIMARY KEY AUTO_INCREMENT,
+  airport_name VARCHAR(50),
+  airport_code VARCHAR(30) DEFAULT '',
+  state VARCHAR(30)
+);
+```
+
+# Task1D: Create conditions lookup table
+# NOTE: 'condition' is the key word
+```{sql connection=dbcon}
+CREATE TABLE conditions(
+  cid INT PRIMARY KEY AUTO_INCREMENT,
+  sky_conditions VARCHAR(30) UNIQUE,
+  explanation VARCHAR(50) DEFAULT ''
+);
+```
+
+# Task1A,C: Create incidents table
+```{sql connection=dbcon}
+CREATE TABLE incidents(
+  rid INT PRIMARY KEY,
+  flight_date DATE,
+  origin_id INT,
+  airline VARCHAR(50),
+  aircraft VARCHAR(30),
+  flight_phase VARCHAR(30),
+  altitude INT,
+  condition_id INT,
+  warning BOOLEAN,
+  FOREIGN KEY(origin_id) REFERENCES airports(aid),
+  FOREIGN KEY(condition_id) REFERENCES conditions(cid)
+);
+```
+
+# --------------------------
+# Task2: populate tables
+# load csv data
+```{r}
+bird_strikes <- read.csv("BirdStrikesData-V2.csv")
+# remove all military flights(89 rows) -> 25469 rows
+bird_strikes <- bird_strikes[!bird_strikes$airline == 'MILITARY',]
+# remove records without flight information(aircraft,flight_date...) -> 25340 rows(129 rows removed)
+# NOTE: '&' or '|' will evaluate the whole vector, while '&&' and '||' will only evaluate the first element
+bird_strikes <- bird_strikes[!(bird_strikes$aircraft == '' & bird_strikes$flight_date == ''),]
+bird_strikes 
+```
+
+# build airports data frame
+```{r}
+airports <- sqldf('SELECT DISTINCT airport AS airport_name, origin AS state 
+                    FROM bird_strikes
+                    ORDER BY state')
+
+# omit rows with airport_name be empty
+# airports <- airports[!(airports$airport_name == ''),]
+
+# if the state is N/A, the airport is not reside within USA, leave it empty
+airports$state[airports$state == 'N/A'] <- ''
+airports
+```
+
+# build conditions data frame
+```{r}
+conditions <- sqldf('SELECT DISTINCT sky_conditions FROM bird_strikes')
+conditions
+```
+
+# populate airports table
+```{r}
+populate_airports <- function() {
+  # iterate airports data frame
+  for (i in 1:nrow(airports)) {
+    # use "" to include value, value may contain ' \' '
+    airport_name <- paste0('"', airports[i,1], '"')
+    state <- paste0('"', airports[i,2], '"')
+    cmd<-paste0('INSERT INTO airports(airport_name, state) VALUES (', airport_name, ',' , state, ')')
+    dbExecute(dbcon,cmd)
+  }
+}
+  
+populate_airports()
+```
+
+# populate conditions table
+```{r}
+populate_conditions <- function() {
+  # iterate conditions data frame
+  for (i in 1:nrow(conditions)) {
+    # use "" to include value
+    sky_conditions <- paste0('"', conditions[i,1], '"')
+    cmd<-paste0('INSERT INTO conditions(sky_conditions) VALUES (', sky_conditions, ')')
+    dbExecute(dbcon,cmd)
+  }
+}
+  
+populate_conditions()
+```
+
+# populate incidents table
+# this may take half a minute
+```{r}
+populate_incidents <- function() {
+  # iterate incidents data frame
+  # for (i in 1:10)
+  for (i in 1:nrow(bird_strikes)){
+    # rid
+    rid <- bird_strikes[i, 1]
+    # rid <- paste0('"', bird_strikes[i, 1], '"')
+    
+    # modify flight_date
+    tmp_date <- strsplit(bird_strikes[i, 7], ' ')[[1]] # omid time
+    tmp_date <- strsplit(tmp_date[[1]], '/')[[1]] # split y,m,d
+    # MySQL permits a “relaxed” format for values specified as strings
+    # for example, any punctuation chracter may be used as the delimiter;
+    # moreover, it will autofill prefix 0 for month and day(1-9)
+    flight_date <- paste(tmp_date[[3]], tmp_date[[1]], tmp_date[[2]], sep = '-')
+    # flight_date <- paste(paste0('20', tmp_date[[3]]), tmp_date[[1]], tmp_date[[2]], sep = '-')
+    flight_date <- paste0('"', flight_date, '"')
+    
+    # query airports table to get origin_id(aid), 
+    # both the airport_name and state name should be matched
+    airport_name <- bird_strikes[i, 3]
+    state <- bird_strikes[i, 10]
+    # modify state with 'N/A' value to empty string
+    if(state == 'N/A'){
+      state <- ''
+    }
+    aid_query<-paste0('SELECT aid FROM airports WHERE airport_name =', '"', airport_name, '"', 'AND state =', '"', state, '"')
+    aid <- dbGetQuery(dbcon, aid_query);
+    origin_id <- aid[1, 1]
+    
+    # airline
+    airline <- paste0('"', bird_strikes[i, 9], '"')
+    
+    # aircraft
+    aircraft <- paste0('"', bird_strikes[i, 2], '"')
+    
+    # modify flight_phase
+    # Assumption: 
+    # 1. 'Take-off run' belongs to takeoff phase
+    # 2. 'Climb', 'Descent', 'Approach' belongs to inflight phase
+    # 3. 'Landing Roll' belongs to landing phase
+    # 4. 'Taxi' can be Taxi-out and Taxi-in; 'Parked' is at the very end of flight phase
+    #    thus they belongs to unknown phase
+    flight_phase <- bird_strikes[i, 11]
+    if(flight_phase == 'Take-off run'){
+      flight_phase <- 'takeoff'
+    } else if (flight_phase == 'Climb' | flight_phase == 'Descent' | flight_phase == 'Approach'){
+      flight_phase <- 'inflight'
+    } else if (flight_phase == 'Landing Roll'){
+      flight_phase <- 'landing'
+    } else {
+      # Taxi && Parked
+      flight_phase <- 'unknown'
+    }
+    flight_phase <- paste0('"', flight_phase, '"')
+    
+    # altitude, no need to include it with ""
+    altitude_str <- bird_strikes[i, 18]
+    # get the first splitted subset
+    splitted_str <- strsplit(altitude_str, ',')[[1]] 
+    altitude <- ''
+    # convert '1,500' into '1500'
+    for(str in splitted_str){
+      altitude <- paste0(altitude, str)
+    }
+    
+    # query conditions table to get condition_id(cid)
+    cid_query<-paste0('SELECT cid FROM conditions WHERE sky_conditions=', '"', bird_strikes[i, 15], '"')
+    cid <- dbGetQuery(dbcon, cid_query);
+    condition_id <- cid[1, 1]
+    
+    # warning, no need to include it with ""
+    warning <- bird_strikes[i, 17]
+    if(warning == 'N'){
+      warning <- 'FALSE'
+    } else {
+      warning <- 'TRUE'
+    }
+    
+    # execute statement
+    cmd<-paste0('INSERT INTO incidents VALUES (', rid, ',', flight_date, ',', origin_id, ',', airline, ',', aircraft, ',',
+                flight_phase, ',', altitude, ',', condition_id, ',', warning, ')')
+    dbExecute(dbcon,cmd)
+  }
+}
+  
+populate_incidents()
+```
+
+# ---------------------------------------------------------------------------------
+# Task3: Show that the loading of the data worked by displaying parts of each table 
+# (do not show the entire tables).
+
+# airports table
+# leave airport_code attribute empty for future expansion
+```{sql connection=dbcon}
+SELECT * FROM airports LIMIT 50;
+```
+
+# conditions table(only 3 records, show the entire table)
+# leave the explanation attribute empty for future expansion
+```{sql connection=dbcon}
+SELECT * FROM conditions;
+```
+
+# incidents table
+```{sql connection=dbcon}
+SELECT * FROM incidents LIMIT 50;
+```
+
+# display joint tables
+```{sql connection=dbcon}
+SELECT * FROM incidents i
+  JOIN airports a ON i.origin_id = a.aid
+  JOIN conditions c ON c.cid = i.condition_id
+  ORDER BY rid
+  LIMIT 50;
+```
+
+# -----------------------------------------------------------------
+# Task4: find the top-10 airlines with the most number of incidents.
+```{sql connection=dbcon}
+SELECT airline, COUNT(rid) AS total FROM incidents 
+  GROUP BY airline
+  ORDER BY total DESC
+  LIMIT 10;
+```
+
+# -----------------------------------------------------------------------------------
+# Task5: find the flight phase that had an above average number bird strike incidents
+# (during any flight phase).
+# NOTE: MySQL requires the derived table to have its own alias
+```{sql connection=dbcon}
+SELECT flight_phase, COUNT(rid) AS total FROM incidents AS i
+  GROUP BY flight_phase
+  HAVING total > (SELECT AVG(cnt) 
+                    FROM (SELECT COUNT(rid) AS cnt 
+                            FROM incidents
+                            GROUP BY flight_phase) AS sub);
+```
+
+# only for testing, not the answer of Task5
+```{sql connection=dbcon}
+SELECT flight_phase, COUNT(rid) AS cnt FROM incidents 
+    GROUP BY flight_phase;
+```
+
+```{sql connection=dbcon}
+SELECT AVG(cnt) AS average FROM (SELECT COUNT(rid) AS cnt 
+                                    FROM incidents 
+                                    GROUP BY flight_phase) AS sub;
+```
+
+# -----------------------------------------------------------------------------------
+# Task6:find the maximum number of bird strike incidents by month (across all years). 
+# Include all airlines and all flights.
+# This query can help answer the question which month, historically, is the most dangerous for bird strikes.
+```{sql connection=dbcon}
+SELECT SUBSTR(flight_date, 6, 2) AS month, COUNT(rid) AS total FROM incidents
+  GROUP BY month
+  HAVING total = (SELECT MAX(cnt) 
+                    FROM (SELECT COUNT(rid) AS cnt FROM incidents
+                            GROUP BY SUBSTR(flight_date, 6, 2)) AS sub);
+```
+
+# only for testing, not the answer of Task6
+```{sql connection=dbcon}
+SELECT SUBSTR(flight_date, 6, 2) AS month, COUNT(rid) AS total FROM incidents
+  GROUP BY month
+  ORDER BY month;
+```
+
+```{sql connection=dbcon}
+SELECT MAX(cnt) FROM (SELECT COUNT(rid) AS cnt FROM incidents
+                        GROUP BY SUBSTR(flight_date, 6, 2)) AS sub;
+```
+
+# ------------------------------------------------------------------------------------------------------------
+# Task7: Build a column chart that visualizes the number of bird strikes incidents per year from 2005 to 2011. 
+# Adorn the graph with appropriate axis labels, titles, legend, data labels, etc.
+```{r}
+# import ggplot2 library for drawing column graph
+library(ggplot2)
+cmd <- "SELECT SUBSTR(flight_date, 1, 4) AS year, COUNT(rid) as total FROM incidents 
+          GROUP BY year
+          HAVING year >= '2005' AND year <= '2011'
+          ORDER BY year;"
+rs <- dbGetQuery(dbcon, cmd)
+rs
+
+# set the stat = 'identity' tells ggplot2 that the y-value is provided
+# instead of counting the # of rows for x-value
+# add column bar, data labels
+graph <- ggplot(rs, aes(x = year, y = total)) + geom_bar(stat='identity', width = 0.5) + geom_text(aes(label = total), vjust = -0.5)
+# add axis labels, titles
+graph <- graph + labs(title = 'Number of Bird Strikes Incidents from 2005 to 2011', 
+                      x = 'Year', y = 'Total Number of Incidents') 
+graph
+```
+
+# only for testing, not the answer of Task7
+```{sql connection=dbcon}
+SELECT SUBSTR(flight_date, 1, 4) AS year, COUNT(rid) as total FROM incidents 
+  GROUP BY year
+  HAVING year >= '2005' AND year <= '2011'
+  ORDER BY year;
+```
+
+# -----------------------------------------------------------------------------------
+# Task8: Create a stored procedure in MySQL that adds a new incident to the database. 
+# You may decide what you need to pass to the stored procedure to add a bird strike incident 
+# and you must account for there being potentially a new airport. 
+# After insertion, show (in R) that your procedure worked.
+```{sql connection=dbcon}
+DROP PROCEDURE IF EXISTS insert_incident_data;
+```
+
+# create stored procedure
+```{sql connection=dbcon}
+CREATE PROCEDURE insert_incident_data(
+  IN rid INT,
+  IN flight_date DATE,
+  IN origin_id INT,
+  IN airline VARCHAR(50),
+  IN aircraft VARCHAR(30),
+  IN flight_phase VARCHAR(30),
+  IN altitude INT,
+  IN condition_id INT,
+  IN warning BOOLEAN
+)
+BEGIN
+	DECLARE originCnt INT;
+	DECLARE conditionCnt INT;
+  
+	SELECT COUNT(aid) INTO originCnt
+	  FROM airports
+	  WHERE aid = origin_id;
+
+  SELECT COUNT(cid) INTO conditionCnt
+	  FROM conditions
+	  WHERE cid = condition_id;
+	  
+	-- check if origin_id and condition_id exists
+	IF originCnt != 1 THEN 
+	  -- '45000' unhandled user-defined exception.
+		SIGNAL SQLSTATE '45000'
+			SET MESSAGE_TEXT = 'Origin id not found in airports table';
+	ELSEIF conditionCnt != 1 THEN
+    SIGNAL SQLSTATE '45000'
+			SET MESSAGE_TEXT = 'Condition id not found in conditions table';
+  ELSE
+    -- no conflicts, insert data into incidents table
+    INSERT INTO incidents 
+      VALUES (rid, flight_date, origin_id, airline, aircraft, flight_phase, altitude, condition_id, warning);
+	END IF;
+	
+END
+
+```
+
+# insert data with new(non-exist) origin_id
+# Error 'Origin id not found in airports table' will appear
+```{sql connection=dbcon}
+CALL insert_incident_data(1, '2000-06-18', 10000, 'test airline1', 'test aircraft1', 'inflight', 1500, 2, TRUE);
+```
+
+# insert data with new(non-exist) condition_id
+# Error 'Condition id not found in conditions table' will appear
+```{sql connection=dbcon}
+CALL insert_incident_data(2, '2005-11-01', 765, 'test airline2', 'test aircraft2', 'landing', 0, 5, FALSE);
+```
+
+# insert data with valid values
+```{sql connection=dbcon}
+CALL insert_incident_data(3, '2005-11-01', 765, 'test airline3', 'test aircraft3', 'takeoff', 0, 1, FALSE);
+```
+
+# show new inserted data 
+```{sql connection=dbcon}
+SELECT * FROM incidents i
+  JOIN airports a ON i.origin_id = a.aid
+  JOIN conditions c ON i.condition_id = c.cid
+  WHERE rid = 3;
+```
+
+# disconnect
+```{r}
+dbDisconnect(dbcon)
+```

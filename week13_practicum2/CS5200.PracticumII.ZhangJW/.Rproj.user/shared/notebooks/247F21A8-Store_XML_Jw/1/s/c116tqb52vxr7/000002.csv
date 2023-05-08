@@ -1,0 +1,10 @@
+"0","```r
+library(RSQLite)
+
+# connect to sqlite db
+wd = getwd()
+fpath = paste0(wd, \"/\")
+dbfile = \"xml_sqlite.db\"
+
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+```"

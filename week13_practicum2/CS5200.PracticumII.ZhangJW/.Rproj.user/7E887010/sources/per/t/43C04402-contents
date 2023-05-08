@@ -1,0 +1,404 @@
+# Author: Zhang, Jinwei
+# Course: CS5200
+# Term: 2023 Spring
+# Date: 2023-04-18
+
+# Part 1 (40 pts) Load XML Data into Database
+
+# Part 1.2
+# load XML into DOM
+library(XML)
+wd = getwd()
+fpath = paste0(wd, "/")
+# read XML file
+xmlFile <- paste0(fpath, "/pubmed-tfm-xml/pubmed22n0001-tf.xml")
+# xmlFile <- paste0(fpath, "/pubmed-tfm-xml/test.xml")
+xmlObj <- xmlParse(xmlFile)
+# get the size of DOM
+r <- xmlRoot(xmlObj)
+size <- xmlSize(r)
+
+# Part 1.3
+# connect to sqlite db
+library(RSQLite)
+
+wd = getwd()
+fpath = paste0(wd, "/")
+dbfile = "xml_sqlite.db"
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+
+# Part 1.4
+# create authors table
+create_table_sql <- "CREATE TABLE authors (
+                        au_id INTEGER PRIMARY KEY,
+                        last_name TEXT,
+                        first_name TEXT,
+                        initials TEXT,
+                        suffix TEXT
+                     )"
+dbExecute(dbcon, create_table_sql)
+
+# create journals table
+# some fields are useless for later parts, such as volume, issue
+create_table_sql <- "CREATE TABLE journals (
+                        issn TEXT PRIMARY KEY,
+                        issn_type TEXT,
+                        title TEXT,
+                        iso_abbreviation TEXT
+                     )"
+dbExecute(dbcon, create_table_sql)
+
+# create articles table
+create_table_sql <- "CREATE TABLE articles (
+                        ar_id INTEGER PRIMARY KEY,
+                        article_title TEXT,
+                        pub_date DATE,
+                        issn TEXT,
+                        FOREIGN KEY(issn) REFERENCES journals(issn)
+                     )"
+dbExecute(dbcon, create_table_sql)
+
+# create mapping table
+create_table_sql <- "CREATE TABLE author2article (
+                        a2a_id INTEGER PRIMARY KEY,
+                        ar_id INTEGER,
+                        au_id INTEGER,
+                        FOREIGN KEY(ar_id) REFERENCES articles(ar_id),
+                        FOREIGN KEY(au_id) REFERENCES authors(au_id)
+                     )"
+dbExecute(dbcon, create_table_sql)
+
+# Part 1.5
+# create internal data frames
+# stringsAsFactors=F tells R not to convert character vectors into factors when creating a data frame
+Author <- data.frame(au_id = integer(),
+                     last_name = character(),
+                     first_name = character(),
+                     initials = character(),
+                     suffix = character(),
+                     stringsAsFactors = F)
+
+Journal <- data.frame(issn = character(),
+                      issn_type = character(),
+                      title = character(),
+                      iso_abbreviation = character(),
+                      stringsAsFactors = F)
+
+Article <- data.frame(ar_id = integer(),
+                      article_title = character(), 
+                      pub_date = character(),
+                      issn = character(),
+                      stringsAsFactors = F)
+
+Author2Article <- data.frame(a2a_id = integer(),
+                             ar_id = integer(),
+                             au_id = integer(),
+                             stringsAsFactors = F)
+
+# functions to check duplicates
+checkIssn <- function(issn) {
+  index <- match(issn, Journal$issn)
+  if (!is.na(index)) {
+    return(index)
+  } else {
+    return(-1)
+  }
+}
+
+checkAuthor <- function(last_name, first_name, initials, suffix) {
+  # check if Author data frame contains the row
+  # it will return empty numeric vector if there's no
+  row_index <- which(Author$last_name == last_name & Author$first_name == first_name 
+                     & Author$initials == initials & Author$suffix == suffix)
+  if (length(row_index) > 0) {
+    return(row_index[1])
+  } else {
+    return(-1)
+  }
+}
+
+checkMapping <- function(ar_id, au_id) {
+  # convert characters into integer
+  ar_id <- as.integer(ar_id)
+  au_id <- as.integer(au_id)
+  # check if Author2Article data frame contains the row
+  row_index <- which(Author2Article$ar_id == ar_id & Author2Article$au_id == au_id)
+  if (length(row_index) > 0) {
+    return(row_index[1])
+  } else {
+    return(-1)
+  }
+}
+
+# function to parse pub_date value and convert the date to format "YYYY-MM-DD"
+extractDate <- function(journalNode)
+{
+  # check the date in xml
+  medlineDateNode <- xpathSApply(journalNode, ".//MedlineDate")
+  # date in range 
+  if(length(medlineDateNode) > 0){
+    date_str <- xpathSApply(journalNode, ".//MedlineDate", xmlValue)
+    # The strsplit() function returns a list of character vectors, with each element of the list representing a split result.
+    date_parts <- strsplit(date_str, " ")[[1]]
+    # "1975-1976" || "1975-1976 Winter" "1975-1976 Fall-Winter"
+    # "1975-1976 ..." case, get the latter year, set the month and day to "01"
+    if(nchar(date_parts[[1]]) == 9){
+      year_str <- strsplit(date_parts, "-")[[1]][[2]]
+      pub_date <- sprintf("%s-01-01", year_str)
+    } else {
+      # "1975 Jul-Aug"
+      year_str <- date_parts[[1]]
+      if(length(date_parts) == 2){
+        # take the first month
+        month_str <- strsplit(date_parts[[2]], "-")[[1]][[1]]
+        # convert to upper case
+        # handle diffrent month_abb cases: "Mar", "MAR"
+        month_num <- match(toupper(month_str), toupper(month.abb))
+        # Create a standard date format string
+        pub_date <- sprintf("%s-%02d-01", year_str, month_num)
+      } else if(length(date_parts) == 3){
+        # "1975 Aug 15-31"
+        if(nchar(date_parts[[2]]) == 3){
+          month_str <- date_parts[[2]]
+          month_num <- match(toupper(month_str), toupper(month.abb))
+          day_str <- strsplit(date_parts[[3]], "-")[[1]][[1]]
+          day_num <- as.integer(day_str)
+          pub_date <- sprintf("%s-%02d-%02d", year_str, month_num, day_num)
+        } else {
+          # "1976 Dec-1977 Jan"
+          month_str <- date_parts[3]
+          month_num <- match(toupper(month_str), toupper(month.abb))
+          # get the latter year
+          year_str <- strsplit(date_parts[[2]], "-")[[1]][[2]]
+          pub_date <- sprintf("%s-%02d-01", year_str, month_num)
+        }
+      }
+    }
+  } else {
+    # year, month and day are separate
+    year_str <- xpathSApply(journalNode, ".//Year", xmlValue)
+    month_str <- xpathSApply(journalNode, ".//Month", xmlValue)
+    day_str <- xpathSApply(journalNode, ".//Day", xmlValue)
+    season_str <- xpathSApply(journalNode, ".//Season", xmlValue)
+    
+    # check season, if season exists, no month and day
+    if(length(season_str) != 0){
+      month_num <- switch(toupper(season_str),
+                          "SPRING" = 3,
+                          "SUMMER" = 6,
+                          "FALL" = 9,
+                          "WINTER" = 12,
+                          1)
+      pub_date <- sprintf("%s-%02d-01", year_str, month_num)
+    } else {
+      # year, month, day
+      # check month
+      if(length(month_str) == 0){
+        month_num <- 1 # default value
+      } else {
+        month_num <- match(toupper(month_str), toupper(month.abb))
+        # month_str is number characters: "04", "10"
+        if(is.na(month_num)){
+          month_num <- as.integer(month_str)
+        }
+      }
+      
+      # check day
+      if(length(day_str) == 0){
+        day_str <- "01" # default value
+      }
+      
+      # Create a standard date format string
+      pub_date <- sprintf("%s-%02d-%s", year_str, month_num, day_str)
+    }
+  }
+  return(pub_date)
+}
+
+# support functions to parse data
+# parse authors from author list
+parseAuthors <- function(authorListNode, baseIdx)
+{
+  tmp_df <- data.frame(au_id = integer(),
+                       last_name = character(),
+                       first_name = character(),
+                       initials = character(),
+                       suffix = character(),
+                       stringsAsFactors = F)
+  
+  authors <- xpathSApply(authorListNode, ".//Author")
+  # iterate authors
+  for(i in 1 : length(authors)){
+    last_name <- xpathSApply(authors[[i]], ".//LastName", xmlValue)
+    first_name <- xpathSApply(authors[[i]], ".//ForeName", xmlValue)
+    initials <- xpathSApply(authors[[i]], ".//Initials", xmlValue)
+    suffix <- xpathSApply(authors[[i]], ".//Suffix", xmlValue)
+    # handle non-exist fields
+    if(length(last_name) == 0){
+      last_name <- "unknown"
+    }
+    if(length(first_name) == 0){
+      first_name <- "unknown"
+    }
+    if(length(initials) == 0){
+      initials <- "unknown"
+    }
+    if(length(suffix) == 0){
+      suffix <- "unknown"
+    }
+    # the new author shouldn't exist in both Author df and tmp df
+    tmp_idx <- which(tmp_df$last_name == last_name & tmp_df$first_name == first_name 
+                     & tmp_df$initials == initials & tmp_df$suffix == suffix)
+    # two authors with same last_name, first_name and initials with different suffix are consindered different authors
+    if(checkAuthor(last_name, first_name, initials, suffix) == -1 && length(tmp_idx) == 0){
+      new_author <- data.frame(au_id = as.integer(nrow(tmp_df) + baseIdx), last_name, first_name, initials, suffix, stringsAsFactors = F)
+      # combine two data frames
+      tmp_df <- rbind(tmp_df, new_author)
+    }
+  }
+  
+  # return updated data frame
+  return(tmp_df)
+}
+
+# parse journal 
+parseJournal <- function(journalNode)
+{
+  issn <- xpathSApply(journalNode, ".//ISSN", xmlValue)
+  issn_type <- xmlAttrs(journalNode[[1]])[[1]]
+  title <- xpathSApply(journalNode, ".//Title", xmlValue)
+  iso_abbreviation <- xpathSApply(journalNode, ".//ISOAbbreviation", xmlValue)
+  
+  new_journal <- data.frame(issn, issn_type, title, iso_abbreviation, stringsAsFactors = F)
+  # return new journal
+  return(new_journal)
+}
+
+# parse article from articleNode
+parseArticle <- function(articleNode, pub_date)
+{
+  ar_id <- as.integer(xmlAttrs(articleNode)[[1]]) 
+  article_title <- xpathSApply(articleNode, ".//ArticleTitle", xmlValue)
+  issn <- xpathSApply(articleNode, ".//ISSN", xmlValue)
+  
+  new_article <- data.frame(ar_id, article_title, issn, pub_date, stringsAsFactors = F)
+  return(new_article)
+}
+
+# extract mapping table data from articleNode
+parseMapping <- function(articleNode, baseIdx)
+{
+  tmp_df <- data.frame(a2a_id = integer(),
+                       ar_id = integer(),
+                       au_id = integer(),
+                       stringsAsFactors = F)
+  
+  ar_id <- as.integer(xmlAttrs(articleNode)[[1]]) 
+  # iterate authors
+  authors <- xpathSApply(articleNode, ".//Author")
+  for(i in 1 : length(authors)){
+    last_name <- xpathSApply(authors[[i]], ".//LastName", xmlValue)
+    first_name <- xpathSApply(authors[[i]], ".//ForeName", xmlValue)
+    initials <- xpathSApply(authors[[i]], ".//Initials", xmlValue)
+    suffix <- xpathSApply(authors[[i]], ".//Suffix", xmlValue)
+    # handle non-exist fields
+    if(length(last_name) == 0){
+      last_name <- "unknown"
+    }
+    if(length(first_name) == 0){
+      first_name <- "unknown"
+    }
+    if(length(initials) == 0){
+      initials <- "unknown"
+    }
+    if(length(suffix) == 0){
+      suffix <- "unknown"
+    }
+    
+    # get the au_id 
+    au_id <- checkAuthor(last_name, first_name, initials, suffix)
+    # check if current article contains duplicated author
+    row_index <- which(tmp_df$ar_id == ar_id & tmp_df$au_id == au_id)
+    # new mapping
+    if(length(row_index) == 0){
+      new_mapping <- data.frame(a2a_id = as.integer(nrow(tmp_df) + baseIdx), ar_id, au_id, stringsAsFactors = F)
+      # combine two data frames
+      tmp_df <- rbind(tmp_df, new_mapping)
+    }
+  }
+  
+  # return updated data frame
+  return(tmp_df)
+}
+
+# validate if the article element in XML is valid
+# filter out invalid articles
+# 1. article is not in journal
+# 2. article doesn't have author
+# 3. journal doesn't have ISSN
+# Assumption: Articles with different PMID are different articles
+isValid <- function(curNode)
+{
+  # article is not in journal
+  journal <- xpathSApply(curNode, ".//Journal")
+  # article doesn't have author
+  authorList <- xpathSApply(curNode, ".//AuthorList")
+  if(length(journal) == 0 || length(authorList) == 0){
+    return(FALSE)
+  }
+  # journal doesn't have issn
+  issn <- xpathSApply(journal[[1]], ".//ISSN", xmlValue)
+  if(length(issn) == 0){
+    return(FALSE)
+  }
+  
+  # valid article
+  return(TRUE)
+}
+
+# iterate over nodes and fill the data frames
+for (i in 1:size){
+  # get current article node
+  curNode <- r[[i]]
+  # skip invalid articles
+  if(!isValid(curNode)){
+    next
+  }
+  
+  # update Author data frame -> should iterate nodes
+  authorList <- xpathSApply(curNode, ".//AuthorList")
+  authors <- parseAuthors(authorList[[1]], nrow(Author) + 1)
+  Author <- rbind(Author, authors)
+  
+  # udpate Journal data frame 
+  journal <- xpathSApply(curNode, ".//Journal")
+  issn <- xpathSApply(journal[[1]], ".//ISSN", xmlValue)
+  idx <- checkIssn(issn)
+  # new journal
+  if(idx == -1){
+    new_journal <- parseJournal(journal[[1]])
+    # combine two data frames
+    Journal <- rbind(Journal, new_journal)
+  }
+  
+  # udpate Article data frame
+  pub_date <- extractDate(journal[[1]])
+  new_article <- parseArticle(curNode, pub_date)
+  Article <- rbind(Article, new_article)
+  
+  # update Author2Article data frame
+  new_mappings <- parseMapping(curNode, nrow(Author2Article) + 1)
+  Author2Article <- rbind(Author2Article, new_mappings)
+}
+
+# show dataframes
+Author
+Journal
+Article
+Author2Article
+
+# write data from dataframes to SQLite db
+dbWriteTable(dbcon, "authors", Author, append = T)
+dbWriteTable(dbcon, "journals", Journal, append = T)
+dbWriteTable(dbcon, "articles", Article, append = T)
+dbWriteTable(dbcon, "author2article", Author2Article, append = T)

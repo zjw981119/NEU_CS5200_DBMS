@@ -1,0 +1,4 @@
+"0","```sql
+SELECT flight_phase, COUNT(rid) AS cnt FROM incidents 
+    GROUP BY flight_phase;
+```"

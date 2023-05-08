@@ -1,0 +1,27 @@
+{
+    "id": "43C04402",
+    "path": "~/Documents/CS5200_DBMS/Assignments/practicum2/CS5200.PracticumII.ZhangJW/LoadXML2DB.ZhangJW.R",
+    "project_path": "LoadXML2DB.ZhangJW.R",
+    "type": "r_source",
+    "hash": "3190657861",
+    "contents": "",
+    "dirty": false,
+    "created": 1681053427003.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "404,0",
+        "scrollLine": "375"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1681872878,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1681872878678,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Publications>
+  <Article PMID="2">
+    <PubDetails>
+      <Journal>
+        <ISSN IssnType="Electronic">1090-2104</ISSN>
+        <JournalIssue CitedMedium="Internet">
+          <Volume>66</Volume>
+          <Issue>4</Issue>
+          <PubDate>
+            <Year>1975</Year>
+            <Month>Oct</Month>
+            <Day>27</Day>
+          </PubDate>
+        </JournalIssue>
+        <Title>Biochemical and biophysical research communications</Title>
+        <ISOAbbreviation>Biochem Biophys Res Commun</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>Delineation of the intimate details of the backbone conformation of pyridine nucleotide coenzymes in aqueous solution.</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y">
+          <LastName>Bose</LastName>
+          <ForeName>K S</ForeName>
+          <Initials>KS</Initials>
+        </Author>
+        <Author ValidYN="Y">
+          <LastName>Sarma</LastName>
+          <ForeName>R H</ForeName>
+          <Initials>RH</Initials>
+        </Author>
+      </AuthorList>
+    </PubDetails>
+  </Article>
+  <Article PMID="10">
+    <PubDetails>
+      <Journal>
+        <ISSN IssnType="Electronic">1873-2968</ISSN>
+        <JournalIssue CitedMedium="Internet">
+          <Volume>24</Volume>
+          <Issue>17</Issue>
+          <PubDate>
+            <Year>1975</Year>
+          </PubDate>
+        </JournalIssue>
+        <Title>Biochemical pharmacology</Title>
+        <ISOAbbreviation>Biochem Pharmacol</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>Digitoxin metabolism by rat liver microsomes.</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y">
+          <LastName>Schmoldt</LastName>
+          <ForeName>A</ForeName>
+          <Initials>A</Initials>
+        </Author>
+        <Author ValidYN="Y">
+          <LastName>Benthe</LastName>
+          <ForeName>H F</ForeName>
+          <Initials>HF</Initials>
+        </Author>
+        <Author ValidYN="Y">
+          <LastName>Haberland</LastName>
+          <ForeName>G</ForeName>
+          <Initials>G</Initials>
+        </Author>
+      </AuthorList>
+    </PubDetails>
+  </Article>  
+  <Article PMID="93">
+    <PubDetails>
+      <Journal>
+        <ISSN IssnType="Print">0006-3029</ISSN>
+        <JournalIssue CitedMedium="Print">
+          <Volume>20</Volume>
+          <Issue>4</Issue>
+          <PubDate>
+            <MedlineDate>1975 Jul-Aug</MedlineDate>
+          </PubDate>
+        </JournalIssue>
+        <Title>Biofizika</Title>
+        <ISOAbbreviation>Biofizika</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>[Structure formation in interphase adsorption layers of lysozyme at liquid boundaries].</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y">
+          <LastName>Alekseeva</LastName>
+          <ForeName>I G</ForeName>
+          <Initials>IG</Initials>
+        </Author>
+        <Author ValidYN="Y">
+          <LastName>Lapina</LastName>
+          <ForeName>G P</ForeName>
+          <Initials>GP</Initials>
+        </Author>
+        <Author ValidYN="Y">
+          <LastName>Tulovskaia</LastName>
+          <ForeName>Z D</ForeName>
+          <Initials>ZD</Initials>
+        </Author>
+        <Author ValidYN="Y">
+          <LastName>Izmaĭlova</LastName>
+          <ForeName>V N</ForeName>
+          <Initials>VN</Initials>
+        </Author>
+      </AuthorList>
+    </PubDetails>
+  </Article>
+  <Article PMID="340">
+    <PubDetails>
+      <Journal>
+        <ISSN IssnType="Print">0020-8167</ISSN>
+        <JournalIssue CitedMedium="Print">
+          <Volume>15</Volume>
+          <Issue>2</Issue>
+          <PubDate>
+            <Year>1975</Year>
+            <Season>Summer</Season>
+          </PubDate>
+        </JournalIssue>
+        <Title>International ophthalmology clinics</Title>
+        <ISOAbbreviation>Int Ophthalmol Clin</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>The ophthalmologist's office: planning and practice. Patient traffic flow and use of paramedical personnel.</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y">
+          <LastName>Byron</LastName>
+          <ForeName>H M</ForeName>
+          <Initials>HM</Initials>
+        </Author>
+      </AuthorList>
+    </PubDetails>
+  </Article>
+  <Article PMID="3651">
+    <PubDetails>
+      <Journal>
+        <ISSN IssnType="Print">0022-2631</ISSN>
+        <JournalIssue CitedMedium="Print">
+          <Volume>25</Volume>
+          <Issue>3-4</Issue>
+          <PubDate>
+            <MedlineDate>1975-1976</MedlineDate>
+          </PubDate>
+        </JournalIssue>
+        <Title>The Journal of membrane biology</Title>
+        <ISOAbbreviation>J Membr Biol</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>Effect of local anesthetics on chloride transport in erythrocytes.</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y">
+          <LastName>Gunn</LastName>
+          <ForeName>R B</ForeName>
+          <Initials>RB</Initials>
+        </Author>
+        <Author ValidYN="Y">
+          <LastName>Cooper</LastName>
+          <ForeName>J A</ForeName>
+          <Initials>JA</Initials>
+          <Suffix>Jr</Suffix>
+        </Author>
+      </AuthorList>
+    </PubDetails>
+  </Article>
+  <Article PMID="4216">
+    <PubDetails>
+      <Journal>
+        <ISSN IssnType="Print">0008-4166</ISSN>
+        <JournalIssue CitedMedium="Print">
+          <Volume>22</Volume>
+          <Issue>4</Issue>
+          <PubDate>
+            <Year>1976</Year>
+            <Month>04</Month>
+          </PubDate>
+        </JournalIssue>
+        <Title>Canadian journal of microbiology</Title>
+        <ISOAbbreviation>Can J Microbiol</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>Superficial cell-wall layers on Spirillum "Ordal" and their in vitro reassembly.</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y">
+          <LastName>Beveridge</LastName>
+          <ForeName>T J</ForeName>
+          <Initials>TJ</Initials>
+        </Author>
+        <Author ValidYN="Y">
+          <LastName>Murray</LastName>
+          <ForeName>R G E</ForeName>
+          <Initials>RGE</Initials>
+        </Author>
+      </AuthorList>
+    </PubDetails>
+  </Article>
+  <Article PMID="4745">
+    <PubDetails>
+      <Journal>
+        <ISSN IssnType="Print">0026-4733</ISSN>
+        <JournalIssue CitedMedium="Print">
+          <Volume>30</Volume>
+          <Issue>15-16</Issue>
+          <PubDate>
+            <MedlineDate>1975 Aug 15-31</MedlineDate>
+          </PubDate>
+        </JournalIssue>
+        <Title>Minerva chirurgica</Title>
+        <ISOAbbreviation>Minerva Chir</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>[Problems connected with kidney transplantation. Experiences at the Transplantation Center in Milan. Clinical selection of the recipient].</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y">
+          <LastName>Ponticelli</LastName>
+          <ForeName>C</ForeName>
+          <Initials>C</Initials>
+        </Author>
+      </AuthorList>
+    </PubDetails>
+  </Article>
+  <Article PMID="6341">
+    <PubDetails>
+      <Journal>
+        <ISSN IssnType="Print">0015-3311</ISSN>
+        <JournalIssue CitedMedium="Print">
+          <Volume>22</Volume>
+          <Issue>3</Issue>
+          <PubDate>
+            <MedlineDate>1976 MAR-APR</MedlineDate>
+          </PubDate>
+        </JournalIssue>
+        <Title>Fiziolohichnyi zhurnal</Title>
+        <ISOAbbreviation>Fiziol Zh</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>[Acid-base state of the blood in neonates that have experienced intrauterine hypoxia after the use of halidor and rhythmic abdominal decompression].</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y">
+          <LastName>Markin</LastName>
+          <ForeName>L B</ForeName>
+          <Initials>LB</Initials>
+        </Author>
+      </AuthorList>
+    </PubDetails>
+  </Article>
+  <Article PMID="20586">
+    <PubDetails>
+      <Journal>
+        <ISSN IssnType="Print">0028-1298</ISSN>
+        <JournalIssue CitedMedium="Print">
+          <Volume>299</Volume>
+          <Issue>2</Issue>
+          <PubDate>
+            <Year>1977</Year>
+            <Month>Sep</Month>
+          </PubDate>
+        </JournalIssue>
+        <Title>Naunyn-Schmiedeberg's archives of pharmacology</Title>
+        <ISOAbbreviation>Naunyn Schmiedebergs Arch Pharmacol</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>Enhanced sympathetic activity in young spontaneously hypertensive rats is not the trigger mechanism for genetic hypertension.</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y">
+          <LastName>Nakamura</LastName>
+          <ForeName>K</ForeName>
+          <Initials>K</Initials>
+        </Author>
+        <Author ValidYN="Y">
+          <LastName>Nakamura</LastName>
+          <ForeName>K</ForeName>
+          <Initials>K</Initials>
+        </Author>
+      </AuthorList>
+    </PubDetails>
+  </Article>
+  <Article PMID="26215">
+    <PubDetails>
+      <Journal>
+        <ISSN IssnType="Print">0069-634X</ISSN>
+        <JournalIssue CitedMedium="Print">
+          <Volume>73</Volume>
+          <Issue>3</Issue>
+          <PubDate>
+            <MedlineDate>1977-1978 Fall-Winter</MedlineDate>
+          </PubDate>
+        </JournalIssue>
+        <Title>Alumnae magazine (Columbia University-Presbyterian Hospital School of Nursing Alumnae Association)</Title>
+        <ISOAbbreviation>Alumnae Mag Columbia Univ Presbyt Hosp Sch Nurs Alumnae Assoc</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>Five issues in nursing.</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y">
+          <LastName>Burside</LastName>
+          <ForeName>H H</ForeName>
+          <Initials>HH</Initials>
+        </Author>
+      </AuthorList>
+    </PubDetails>
+  </Article>
+</Publications>

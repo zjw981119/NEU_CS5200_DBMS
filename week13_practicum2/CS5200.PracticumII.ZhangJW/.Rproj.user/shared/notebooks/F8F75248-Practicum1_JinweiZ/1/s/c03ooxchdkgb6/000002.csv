@@ -1,0 +1,4 @@
+"1","Error in .local(conn, statement, ...) : 
+  could not run statement: Origin id not found in airports table
+Failed to execute SQL chunk
+"

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE log [
+  <!ELEMENT log (Page*, Visitor*, Visit*)>
+  <!ELEMENT Page (url)>
+  <!ATTLIST Page pid ID #REQUIRED>
+  <!ELEMENT url (#PCDATA)>
+  <!ELEMENT Visitor (ip)>
+  <!ATTLIST Visitor vid ID #REQUIRED>
+  <!ELEMENT ip (#PCDATA)>
+  <!ELEMENT Visit (vdate, vtime)>
+  <!ATTLIST Visit tid ID #REQUIRED>
+  <!ELEMENT vdate (#PCDATA)>
+  <!ELEMENT vtime (#PCDATA)>
+  <!ATTLIST Visit pid IDREF #REQUIRED>
+  <!ATTLIST Visit vid IDREF #REQUIRED>
+]>
+
+<log>
+    <!-- instances for page -->
+    <Page pid="i101">
+        <url>https://northeastern.instructure.com/courses/136680</url>
+    </Page>
+
+    <Page pid="i102">
+        <url>https://northeastern.instructure.com/courses/136681</url>
+    </Page>
+
+    <Page pid="i103">
+        <url>https://northeastern.instructure.com/courses/136682</url>
+    </Page>
+
+    <Page pid="i104">
+        <url>https://northeastern.instructure.com/courses/136683</url>
+    </Page>
+
+    <Page pid="i105">
+        <url>https://northeastern.instructure.com/courses/136684</url>
+    </Page>
+
+    <!-- instances for visitor -->
+    <Visitor vid="i201">
+        <ip>192.168.125.1</ip>
+    </Visitor>
+
+    <Visitor vid="i202">
+        <ip>192.168.125.2</ip>
+    </Visitor>
+
+    <Visitor vid="i203">
+        <ip>192.168.125.3</ip>
+    </Visitor>
+
+    <Visitor vid="i204">
+        <ip>192.168.125.4</ip>
+    </Visitor>
+
+    <Visitor vid="i205">
+        <ip>192.168.125.5</ip>
+    </Visitor>
+
+    <!-- instances for visit -->
+    <Visit tid="i1" pid="i101" vid="i201">
+        <vdate>2023-03-25</vdate>
+        <vtime>20:03:44</vtime>
+    </Visit>
+
+    <Visit tid="i2" pid="i102" vid="i202">
+        <vdate>2023-03-26</vdate>
+        <vtime>08:03:34</vtime>
+    </Visit>
+
+    <Visit tid="i3" pid="i102" vid="i202">
+        <vdate>2023-03-27</vdate>
+        <vtime>08:55:34</vtime>
+    </Visit>
+
+    <Visit tid="i4" pid="i103" vid="i203">
+        <vdate>2023-03-27</vdate>
+        <vtime>11:55:34</vtime>
+    </Visit>
+
+    <Visit tid="i5" pid="i104" vid="i204">
+        <vdate>2023-03-28</vdate>
+        <vtime>13:23:55</vtime>
+    </Visit>
+
+    <Visit tid="i6" pid="i105" vid="i205">
+        <vdate>2023-03-29</vdate>
+        <vtime>16:23:55</vtime>
+    </Visit>
+</log>

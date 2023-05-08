@@ -1,0 +1,3 @@
+"0","```sql
+DROP PROCEDURE IF EXISTS insert_incident_data;
+```"

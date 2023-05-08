@@ -1,0 +1,6 @@
+"0","```sql
+SELECT * FROM incidents i
+  JOIN airports a ON i.origin_id = a.aid
+  JOIN conditions c ON i.condition_id = c.cid
+  WHERE rid = 3;
+```"

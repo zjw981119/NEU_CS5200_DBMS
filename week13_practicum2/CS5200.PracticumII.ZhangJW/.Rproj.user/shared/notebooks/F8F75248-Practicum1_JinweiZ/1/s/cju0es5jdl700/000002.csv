@@ -1,0 +1,89 @@
+"0","```r
+populate_incidents <- function() {
+  # iterate incidents data frame
+  # for (i in 1:10)
+  for (i in 1:nrow(bird_strikes)){
+    # rid
+    rid <- bird_strikes[i, 1]
+    # rid <- paste0('\"', bird_strikes[i, 1], '\"')
+    
+    # modify flight_date
+    tmp_date <- strsplit(bird_strikes[i, 7], ' ')[[1]] # omid time
+    tmp_date <- strsplit(tmp_date[[1]], '/')[[1]] # split y,m,d
+    # MySQL permits a “relaxed” format for values specified as strings
+    # for example, any punctuation chracter may be used as the delimiter;
+    # moreover, it will autofill prefix 0 for month and day(1-9)
+    flight_date <- paste(tmp_date[[3]], tmp_date[[1]], tmp_date[[2]], sep = '-')
+    # flight_date <- paste(paste0('20', tmp_date[[3]]), tmp_date[[1]], tmp_date[[2]], sep = '-')
+    flight_date <- paste0('\"', flight_date, '\"')
+    
+    # query airports table to get origin_id(aid), 
+    # both the airport_name and state name should be matched
+    airport_name <- bird_strikes[i, 3]
+    state <- bird_strikes[i, 10]
+    # modify state with 'N/A' value to empty string
+    if(state == 'N/A'){
+      state <- ''
+    }
+    aid_query<-paste0('SELECT aid FROM airports WHERE airport_name =', '\"', airport_name, '\"', 'AND state =', '\"', state, '\"')
+    aid <- dbGetQuery(dbcon, aid_query);
+    origin_id <- aid[1, 1]
+    
+    # airline
+    airline <- paste0('\"', bird_strikes[i, 9], '\"')
+    
+    # aircraft
+    aircraft <- paste0('\"', bird_strikes[i, 2], '\"')
+    
+    # modify flight_phase
+    # Assumption: 
+    # 1. 'Take-off run' belongs to takeoff phase
+    # 2. 'Climb', 'Descent', 'Approach' belongs to inflight phase
+    # 3. 'Landing Roll' belongs to landing phase
+    # 4. 'Taxi' can be Taxi-out and Taxi-in; 'Parked' is at the very end of flight phase
+    #    thus they belongs to unknown phase
+    flight_phase <- bird_strikes[i, 11]
+    if(flight_phase == 'Take-off run'){
+      flight_phase <- 'takeoff'
+    } else if (flight_phase == 'Climb' | flight_phase == 'Descent' | flight_phase == 'Approach'){
+      flight_phase <- 'inflight'
+    } else if (flight_phase == 'Landing Roll'){
+      flight_phase <- 'landing'
+    } else {
+      # Taxi && Parked
+      flight_phase <- 'unknown'
+    }
+    flight_phase <- paste0('\"', flight_phase, '\"')
+    
+    # altitude, no need to include it with \"\"
+    altitude_str <- bird_strikes[i, 18]
+    # get the first splitted subset
+    splitted_str <- strsplit(altitude_str, ',')[[1]] 
+    altitude <- ''
+    # convert '1,500' into '1500'
+    for(str in splitted_str){
+      altitude <- paste0(altitude, str)
+    }
+    
+    # query conditions table to get condition_id(cid)
+    cid_query<-paste0('SELECT cid FROM conditions WHERE sky_conditions=', '\"', bird_strikes[i, 15], '\"')
+    cid <- dbGetQuery(dbcon, cid_query);
+    condition_id <- cid[1, 1]
+    
+    # warning, no need to include it with \"\"
+    warning <- bird_strikes[i, 17]
+    if(warning == 'N'){
+      warning <- 'FALSE'
+    } else {
+      warning <- 'TRUE'
+    }
+    
+    # execute statement
+    cmd<-paste0('INSERT INTO incidents VALUES (', rid, ',', flight_date, ',', origin_id, ',', airline, ',', aircraft, ',',
+                flight_phase, ',', altitude, ',', condition_id, ',', warning, ')')
+    dbExecute(dbcon,cmd)
+  }
+}
+  
+populate_incidents()
+```"

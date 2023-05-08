@@ -1,0 +1,26 @@
+---
+title: "Build XML Structure"
+output: html_notebook
+### Author: Zhang, Jinwei
+### Course: CS5200
+### Term: 2023 Spring
+---
+
+```{r}
+library(XML)
+
+# get the file path
+wd = getwd()
+fpath = paste0(wd, "/")
+xmlFile <- paste0(fpath, "Visits.xml")
+
+# read and validate the XML file with DTD
+xmlObjTree <- xmlTreeParse(xmlFile, validate = TRUE, useInternalNodes = TRUE)
+
+# find the total number of visits for page i102
+xpathEx <- "count(//log/Visit[@pid='i102'])"
+res <- xpathSApply(xmlObjTree, xpathEx, xmlValue)
+cat(paste0("The total number of visits for page i102 is ", res))
+```
+
+

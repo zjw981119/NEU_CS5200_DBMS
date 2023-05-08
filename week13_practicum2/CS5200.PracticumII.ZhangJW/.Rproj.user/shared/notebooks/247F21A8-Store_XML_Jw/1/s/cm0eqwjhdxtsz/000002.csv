@@ -1,0 +1,20 @@
+"0","```r
+checkTitle <- function(title) {
+  index <- match(title, BookDetail$title)
+  if (!is.na(index)) {
+    return(index)
+  } else {
+    return(-1)
+  }
+}
+
+checkEdition <- function(edition, publish_date) {
+  # check if EditionDetail data frame contains the row
+  row_index <- which(EditionDetail$edition == edition & EditionDetail$publish_date == publish_date)
+  if (length(row_index) > 0) {
+    return(row_index)
+  } else {
+    return(-1)
+  }
+}
+```"

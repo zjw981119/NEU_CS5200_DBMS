@@ -1,0 +1,3 @@
+"0","```sql
+CALL insert_incident_data(3, '2005-11-01', 765, 'test airline3', 'test aircraft3', 'takeoff', 0, 1, FALSE);
+```"

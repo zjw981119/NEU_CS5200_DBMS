@@ -1,0 +1,5 @@
+"0","```sql
+SELECT AVG(cnt) AS average FROM (SELECT COUNT(rid) AS cnt 
+                                    FROM incidents 
+                                    GROUP BY flight_phase) AS sub;
+```"

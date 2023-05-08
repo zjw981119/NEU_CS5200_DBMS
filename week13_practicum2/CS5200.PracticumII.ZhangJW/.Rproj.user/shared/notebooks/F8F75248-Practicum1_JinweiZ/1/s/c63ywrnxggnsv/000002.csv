@@ -1,0 +1,6 @@
+"0","```sql
+SELECT airline, COUNT(rid) AS total FROM incidents 
+  GROUP BY airline
+  ORDER BY total DESC
+  LIMIT 10;
+```"

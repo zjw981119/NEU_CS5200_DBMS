@@ -1,0 +1,41 @@
+"0","```sql
+CREATE PROCEDURE insert_incident_data(
+  IN rid INT,
+  IN flight_date DATE,
+  IN origin_id INT,
+  IN airline VARCHAR(50),
+  IN aircraft VARCHAR(30),
+  IN flight_phase VARCHAR(30),
+  IN altitude INT,
+  IN condition_id INT,
+  IN warning BOOLEAN
+)
+BEGIN
+	DECLARE originCnt INT;
+	DECLARE conditionCnt INT;
+  
+	SELECT COUNT(aid) INTO originCnt
+	  FROM airports
+	  WHERE aid = origin_id;
+
+  SELECT COUNT(cid) INTO conditionCnt
+	  FROM conditions
+	  WHERE cid = condition_id;
+	  
+	-- check if origin_id and condition_id exists
+	IF originCnt != 1 THEN 
+	  -- '45000' unhandled user-defined exception.
+		SIGNAL SQLSTATE '45000'
+			SET MESSAGE_TEXT = 'Origin id not found in airports table';
+	ELSEIF conditionCnt != 1 THEN
+    SIGNAL SQLSTATE '45000'
+			SET MESSAGE_TEXT = 'Condition id not found in conditions table';
+  ELSE
+    -- no conflicts, insert data into incidents table
+    INSERT INTO incidents 
+      VALUES (rid, flight_date, origin_id, airline, aircraft, flight_phase, altitude, condition_id, warning);
+	END IF;
+	
+END
+
+```"

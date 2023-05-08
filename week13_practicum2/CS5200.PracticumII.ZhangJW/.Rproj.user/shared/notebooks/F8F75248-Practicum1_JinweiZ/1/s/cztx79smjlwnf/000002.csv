@@ -1,0 +1,8 @@
+"0","```sql
+CREATE TABLE airports(
+  aid INT PRIMARY KEY AUTO_INCREMENT,
+  airport_name VARCHAR(50),
+  airport_code VARCHAR(30) DEFAULT '',
+  state VARCHAR(30)
+);
+```"

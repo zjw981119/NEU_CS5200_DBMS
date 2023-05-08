@@ -1,0 +1,27 @@
+{
+    "id": "5BC0A163",
+    "path": "~/Documents/CS5200_DBMS/Assignments/CS5200.BuildDocDB.Zhang/CreateFStruct.r",
+    "project_path": "CreateFStruct.r",
+    "type": "r_source",
+    "hash": "794928377",
+    "contents": "",
+    "dirty": false,
+    "created": 1673841312757.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "14,35",
+        "scrollLine": "0",
+        "docOutlineVisible": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1673841461,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1673841461192,
+    "read_only": false,
+    "read_only_alternatives": []
+}

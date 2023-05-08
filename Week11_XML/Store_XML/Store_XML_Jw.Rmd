@@ -1,0 +1,261 @@
+---
+title: "Store XML in a Database"
+output: html_notebook
+### Author: Zhang, Jinwei
+### Course: CS5200
+### Term: 2023 Spring
+---
+
+## Q1: Create a normalized (BCNF) relational schema
+Assumptions about XML data:
+1. The schema has following functional dependencies:
+   (1) bid -> title, eid
+   (2) title -> author, genre, price, description
+   (3) eid -> edition, publish_date
+2. Only the books with different editions can have the same title
+3. Each book has only one author, one genre
+4. Each book must have an edition(default 1) and publish_date
+```{r}
+library(knitr)
+imageURL <- "https://i.imgur.com/l3ng4N5.jpg"
+knitr::include_graphics(imageURL)
+```
+
+
+## Q2: Create a SQLite database that implements the schema
+### connect db
+```{r}
+library(RSQLite)
+
+# connect to sqlite db
+wd = getwd()
+fpath = paste0(wd, "/")
+dbfile = "xml_sqlite.db"
+
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+```
+
+### enable foreign key constraint
+```{sql connection=dbcon}
+PRAGMA foreign_keys = ON
+```
+
+### drop table if exists
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS Book;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS BookDetail;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS EditionDetail;
+```
+
+### create tables
+```{sql connection=dbcon}
+CREATE TABLE IF NOT EXISTS BookDetail(
+  title TEXT NOT NULL PRIMARY KEY,
+  author TEXT,
+  genre TEXT,
+  price NUMERIC,
+  description TEXT
+);
+```
+
+```{sql connection=dbcon}
+CREATE TABLE IF NOT EXISTS EditionDetail(
+  eid INTEGER NOT NULL PRIMARY KEY,
+  edition INTEGER NOT NULL,
+  publish_date DATE NOT NULL,
+  UNIQUE (edition, publish_date)
+);
+```
+
+```{sql connection=dbcon}
+CREATE TABLE IF NOT EXISTS Book(
+  bid TEXT NOT NULL PRIMARY KEY,
+  title TEXT NOT NULL,
+  eid INTEGER NOT NULL,
+  FOREIGN KEY (title) REFERENCES BookDetail(title),
+  FOREIGN KEY (eid) REFERENCES EditionDetail(eid)
+);
+```
+
+## Q3: Load the XML data from the file into R data frames
+### load XML into DOM
+```{r}
+library(XML)
+wd = getwd()
+fpath = paste0(wd, "/")
+# read XML file
+xmlFile <- paste0(fpath, "Books-v3.xml")
+xmlObj <- xmlParse(xmlFile)
+# get the size of DOM
+r <- xmlRoot(xmlObj)
+size <- xmlSize(r)
+```
+
+### create internal data frames
+```{r}
+# stringsAsFactors=F tells R not to convert character vectors into factors when creating a data frame
+BookDetail <- data.frame(title = character(),
+                         author = character(), 
+                         genre = character(),
+                         price = numeric(),
+                         description = character(),
+                         stringsAsFactors = F)
+
+EditionDetail <- data.frame(eid = integer(),
+                            edition = integer(), 
+                            publish_date = character(),
+                            stringsAsFactors = F)
+
+Book <- data.frame(bid = integer(),
+                   title = character(), 
+                   eid = integer(),
+                   stringsAsFactors = F)
+```
+
+### functions to check duplicates
+```{r}
+checkTitle <- function(title) {
+  index <- match(title, BookDetail$title)
+  if (!is.na(index)) {
+    return(index)
+  } else {
+    return(-1)
+  }
+}
+
+checkEdition <- function(edition, publish_date) {
+  # check if EditionDetail data frame contains the row
+  row_index <- which(EditionDetail$edition == edition & EditionDetail$publish_date == publish_date)
+  if (length(row_index) > 0) {
+    return(row_index)
+  } else {
+    return(-1)
+  }
+}
+```
+
+### support function to parse data
+```{r}
+parseBookDetail <- function(curNode)
+{
+  # if using //book/title, even pass the single node, it will extract titles of the whole document
+  title <- xpathSApply(curNode, "./title", xmlValue)
+  author <- xpathSApply(curNode, "./author", xmlValue)
+  genre <- xpathSApply(curNode, "./genre", xmlValue)
+  price <- as.numeric(xpathSApply(curNode, "./price", xmlValue))
+  description <- xpathSApply(curNode, "./description", xmlValue)
+  
+  newBookDetail.df <- data.frame(title, author, genre, price, description, stringsAsFactors = F)
+  return(newBookDetail.df)
+}
+```
+
+### iterate over nodes and fill the data frames
+```{r}
+bdIdx <- 1
+edIdx <- 1
+bkIdx <- 1
+for (i in 1:size){
+  # get current book
+  curBookNode <- r[[i]]
+  
+  # new title, add to BookDetail data frame
+  title <- xpathSApply(curBookNode, "./title", xmlValue)
+  if(checkTitle(title) == -1){
+    BookDetail[bdIdx,] <- parseBookDetail(curBookNode)
+    bdIdx <- bdIdx + 1
+  }
+  
+  edition <- xpathSApply(curBookNode, "./edition", xmlValue)
+  publish_date <- xpathSApply(curBookNode, "./publish_date", xmlValue)
+  # no edition, default 1
+  if(length(edition) != 1){
+    edition <- as.integer(1)
+  } else {
+    edition <- as.integer(edition)
+  }
+  # new edition detail, add to EditionDetail data frame
+  if(checkEdition(edition, publish_date) == -1){
+    eid <- as.integer(edIdx)
+    EditionDetail[edIdx,] <- data.frame(eid, edition, publish_date, stringsAsFactors = F)
+    edIdx <- edIdx + 1
+  }
+  
+  # add to Book dataframe
+  bid <- xmlAttrs(r[[i]])[[1]]
+  # get the eid
+  eid <- checkEdition(edition, publish_date)
+  Book[bkIdx,] <- data.frame(bid, title, eid, stringsAsFactors = F)
+  bkIdx <- bkIdx + 1
+}
+```
+
+
+### display data frames
+```{r}
+Book
+BookDetail
+EditionDetail
+```
+
+## Q4: write data from dataframes to SQLite db
+```{r}
+dbWriteTable(dbcon, "BookDetail", BookDetail, overwrite = T)
+dbWriteTable(dbcon, "EditionDetail", EditionDetail, overwrite = T)
+dbWriteTable(dbcon, "Book", Book, overwrite = T)
+```
+
+### show tables
+```{sql connection=dbcon}
+SELECT * FROM Book;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM BookDetail;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM EditionDetail;
+```
+
+## Q5: write SQL queries
+A: What is the number of genres have at least three books?
+```{sql connection=dbcon}
+SELECT COUNT(genre) AS num FROM 
+  (SELECT genre FROM Book b
+    JOIN BookDetail bd ON b.title = bd.title
+    GROUP BY genre
+    HAVING COUNT(bid) >= 3)
+```
+B: What is the oldest year in which a publication was published?
+```{sql connection=dbcon}
+SELECT MIN(year) AS oldest_year FROM
+  (SELECT SUBSTR(publish_date, 1, 4) AS year FROM EditionDetail);
+```
+C: Find the number of books and average price for each genre.
+```{sql connection=dbcon}
+SELECT genre, COUNT(bid) AS total, ROUND(AVG(price), 2) AS avg_price FROM Book b
+  JOIN BookDetail bd ON b.title = bd.title
+  GROUP BY genre;
+```
+D: List the title and author of all books that are less than 0.8 * AVG or more than 1.2 * AVG, where AVG is the average price of all books. 
+```{sql connection=dbcon}
+SELECT DISTINCT title, author FROM BookDetail
+  WHERE price < 0.8*(SELECT AVG(price) FROM Book b 
+                      JOIN BookDetail bd ON b.title = bd.title) 
+  OR price > 1.2*(SELECT AVG(price) FROM Book b 
+                    JOIN BookDetail bd ON b.title = bd.title);
+```
+
+### discconect db
+```{r}
+dbDisconnect(dbcon)
+```
+
+

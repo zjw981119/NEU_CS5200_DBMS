@@ -1,0 +1,5 @@
+"0","sql_query <- ""SELECT issn, issn_type, iso_abbreviation FROM journals"""
+"0",""
+"0","# get the data from sqlite db"
+"0","journal_dim <- dbGetQuery(dbcon, sql_query)"
+"0","journal_dim"

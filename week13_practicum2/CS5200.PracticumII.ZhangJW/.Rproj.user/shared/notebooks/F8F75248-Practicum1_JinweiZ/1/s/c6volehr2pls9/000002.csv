@@ -1,0 +1,9 @@
+"0","```r
+bird_strikes <- read.csv(\"BirdStrikesData-V2.csv\")
+# remove all military flights(89 rows) -> 25469 rows
+bird_strikes <- bird_strikes[!bird_strikes$airline == 'MILITARY',]
+# remove records without flight information(aircraft,flight_date...) -> 25340 rows(129 rows removed)
+# NOTE: '&' or '|' will evaluate the whole vector, while '&&' and '||' will only evaluate the first element
+bird_strikes <- bird_strikes[!(bird_strikes$aircraft == '' & bird_strikes$flight_date == ''),]
+bird_strikes 
+```"

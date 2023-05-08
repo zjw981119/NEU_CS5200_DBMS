@@ -1,0 +1,13 @@
+"0","```r
+populate_conditions <- function() {
+  # iterate conditions data frame
+  for (i in 1:nrow(conditions)) {
+    # use \"\" to include value
+    sky_conditions <- paste0('\"', conditions[i,1], '\"')
+    cmd<-paste0('INSERT INTO conditions(sky_conditions) VALUES (', sky_conditions, ')')
+    dbExecute(dbcon,cmd)
+  }
+}
+  
+populate_conditions()
+```"

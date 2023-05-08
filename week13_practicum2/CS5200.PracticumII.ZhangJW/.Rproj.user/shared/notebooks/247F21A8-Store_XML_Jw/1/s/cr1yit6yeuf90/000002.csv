@@ -1,0 +1,8 @@
+"0","```sql
+CREATE TABLE IF NOT EXISTS EditionDetail(
+  eid INTEGER NOT NULL PRIMARY KEY,
+  edition INTEGER NOT NULL,
+  publish_date DATE NOT NULL,
+  UNIQUE (edition, publish_date)
+);
+```"

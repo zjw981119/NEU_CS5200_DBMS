@@ -1,0 +1,5 @@
+"0","```r
+dbWriteTable(dbcon, \"BookDetail\", BookDetail, overwrite = T)
+dbWriteTable(dbcon, \"EditionDetail\", EditionDetail, overwrite = T)
+dbWriteTable(dbcon, \"Book\", Book, overwrite = T)
+```"

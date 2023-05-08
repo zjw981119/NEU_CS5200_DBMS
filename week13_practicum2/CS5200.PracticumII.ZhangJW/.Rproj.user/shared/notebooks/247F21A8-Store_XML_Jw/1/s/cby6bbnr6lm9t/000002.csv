@@ -1,0 +1,9 @@
+"0","```sql
+CREATE TABLE IF NOT EXISTS Book(
+  bid TEXT NOT NULL PRIMARY KEY,
+  title TEXT NOT NULL,
+  eid INTEGER NOT NULL,
+  FOREIGN KEY (title) REFERENCES BookDetail(title),
+  FOREIGN KEY (eid) REFERENCES EditionDetail(eid)
+);
+```"

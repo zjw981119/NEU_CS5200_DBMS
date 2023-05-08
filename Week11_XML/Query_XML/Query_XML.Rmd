@@ -1,0 +1,61 @@
+---
+title: "Query XML"
+output: html_notebook
+### Author: Zhang, Jinwei
+### Course: CS5200
+### Term: 2023 Spring
+---
+
+### read XML file
+```{r}
+library(XML)
+
+# get the file path
+wd = getwd()
+fpath = paste0(wd, "/")
+xmlFile <- paste0(fpath, "Books-v3.xml")
+
+# read XML file
+xmlObj <- xmlParse(xmlFile)
+xmlObj
+```
+
+## Query 1
+What are the titles of all books written by "Galos, Mike"? List the titles and the prices.
+```{r}
+xpathEx <- "//book[author='Galos, Mike']/title/text() | //book[author='Galos, Mike']/price/text()"
+res <- xpathSApply(xmlObj, xpathEx, xmlValue)
+res
+```
+
+## Query 2
+In what genre is the book with id "bk109".
+```{r}
+xpathEx <- "//book[@id='bk109']/genre/text()"
+res <- xpathSApply(xmlObj, xpathEx, xmlValue)
+res
+```
+
+## Query 3
+What are the titles of the books that sell for the lowest price? (Use the min aggregation function)
+```{r}
+xpathEx <- "//book[price=min(//book/price)]/title/text()"
+res <- xpathSApply(xmlObj, xpathEx, xmlValue)
+res
+```
+
+## Query 4
+List the title and prices of all books in the "Computer" genre.
+```{r}
+xpathEx <- "//book[genre='Computer']/title/text() | //book[genre='Computer']/price/text()"
+res <- xpathSApply(xmlObj, xpathEx, xmlValue)
+res
+```
+
+## Query 5
+What is the number of all books that cost less than $5? (Use the count aggregation function)
+```{r}
+xpathEx <- "count(//book[price < 5])"
+res <- xpathSApply(xmlObj, xpathEx, xmlValue)
+res
+```

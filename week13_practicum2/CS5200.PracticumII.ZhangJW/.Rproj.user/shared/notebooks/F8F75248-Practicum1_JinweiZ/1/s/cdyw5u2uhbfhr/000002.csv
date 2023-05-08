@@ -1,0 +1,5 @@
+"0","```sql
+SELECT SUBSTR(flight_date, 6, 2) AS month, COUNT(rid) AS total FROM incidents
+  GROUP BY month
+  ORDER BY month;
+```"

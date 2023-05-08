@@ -1,0 +1,14 @@
+"0","```r
+populate_airports <- function() {
+  # iterate airports data frame
+  for (i in 1:nrow(airports)) {
+    # use \"\" to include value, value may contain ' \' '
+    airport_name <- paste0('\"', airports[i,1], '\"')
+    state <- paste0('\"', airports[i,2], '\"')
+    cmd<-paste0('INSERT INTO airports(airport_name, state) VALUES (', airport_name, ',' , state, ')')
+    dbExecute(dbcon,cmd)
+  }
+}
+  
+populate_airports()
+```"

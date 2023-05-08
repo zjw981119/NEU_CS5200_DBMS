@@ -1,0 +1,4 @@
+"0","```sql
+SELECT MIN(year) AS oldest_year FROM
+  (SELECT SUBSTR(publish_date, 1, 4) AS year FROM EditionDetail);
+```"

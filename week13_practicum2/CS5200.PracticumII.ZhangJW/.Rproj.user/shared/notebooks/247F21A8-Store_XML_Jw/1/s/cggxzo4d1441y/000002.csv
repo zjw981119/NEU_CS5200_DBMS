@@ -1,0 +1,5 @@
+"0","```sql
+SELECT genre, COUNT(bid) AS total, ROUND(AVG(price), 2) AS avg_price FROM Book b
+  JOIN BookDetail bd ON b.title = bd.title
+  GROUP BY genre;
+```"

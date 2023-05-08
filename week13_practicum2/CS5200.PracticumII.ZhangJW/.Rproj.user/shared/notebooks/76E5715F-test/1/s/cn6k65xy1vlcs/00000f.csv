@@ -1,0 +1,4 @@
+"0","dbWriteTable(dbcon, ""authors"", Author, append = T)"
+"0","dbWriteTable(dbcon, ""journals"", Journal, append = T)"
+"0","dbWriteTable(dbcon, ""articles"", Article, append = T)"
+"0","dbWriteTable(dbcon, ""author2article"", Author2Article, append = T)"

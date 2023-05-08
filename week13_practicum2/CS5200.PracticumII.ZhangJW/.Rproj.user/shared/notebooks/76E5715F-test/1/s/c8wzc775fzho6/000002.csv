@@ -1,0 +1,13 @@
+"0","SELECT 
+  authors.au_id,
+  authors.last_name,
+  authors.first_name,
+  authors.initials,
+  authors.suffix,
+  COUNT(DISTINCT articles.ar_id) AS article_count,
+  COUNT(DISTINCT coauths.au_id) AS coauthor_count
+FROM authors
+LEFT JOIN author2article ON authors.au_id = author2article.au_id
+LEFT JOIN articles ON author2article.ar_id = articles.ar_id
+LEFT JOIN author2article AS coauths ON articles.ar_id = coauths.ar_id AND authors.au_id != coauths.au_id
+GROUP BY authors.au_id"

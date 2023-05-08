@@ -1,0 +1,15 @@
+"0","```sql
+CREATE TABLE incidents(
+  rid INT PRIMARY KEY,
+  flight_date DATE,
+  origin_id INT,
+  airline VARCHAR(50),
+  aircraft VARCHAR(30),
+  flight_phase VARCHAR(30),
+  altitude INT,
+  condition_id INT,
+  warning BOOLEAN,
+  FOREIGN KEY(origin_id) REFERENCES airports(aid),
+  FOREIGN KEY(condition_id) REFERENCES conditions(cid)
+);
+```"

@@ -1,0 +1,7 @@
+"0","```sql
+SELECT * FROM incidents i
+  JOIN airports a ON i.origin_id = a.aid
+  JOIN conditions c ON c.cid = i.condition_id
+  ORDER BY rid
+  LIMIT 50;
+```"

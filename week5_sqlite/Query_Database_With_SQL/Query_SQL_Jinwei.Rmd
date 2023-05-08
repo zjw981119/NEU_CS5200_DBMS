@@ -1,0 +1,196 @@
+---
+title: "Query a Database with SQL"
+output: html_notebook
+### Author: Zhang, Jinwei
+### Course: CS5200
+### Term: 2023 Spring
+---
+
+# create connection to db
+```{r}
+library(RSQLite)
+
+# get current work directory
+wd = getwd()
+fpath = paste0(wd, "/")
+dbfile = "MediaDB.db"
+
+# create db or get db connection
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+```
+
+```{sql connection=dbcon}
+SELECT * FROM customers;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM albums;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM artists;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM tracks;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM media_types;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM genres;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM employees;
+```
+
+# Q1.What are the last names, city, and state of all customer who made at least one purchase?
+```{sql connection=dbcon}
+SELECT LastName, City, State FROM customers
+  WHERE CustomerId IN(SELECT DISTINCT CustomerId FROM invoices);
+```
+
+# Q2.What are the titles of each albums and the number of tracks on each album?
+```{sql connection=dbcon}
+SELECT a.Title, COUNT(t.TrackId) AS TotalNum FROM albums AS a
+  INNER JOIN tracks AS t ON a.AlbumId = t.AlbumId
+  GROUP BY a.AlbumId;
+```
+
+# Q3.List the number of tracks by media type.
+```{sql connection=dbcon}
+SELECT m.MediaTypeId, m.Name, COUNT(t.TrackId) AS TrackNum FROM media_types AS m
+  INNER JOIN tracks AS t ON m.MediaTypeId = t.MediaTypeId
+  GROUP BY m.MediaTypeId;
+```
+
+# Q4.What is the average age of the employees? 
+# Hint: SQLite does not support DATEDIFF but does support STRFTIME
+# Compare year, then compare month-day to calculate the offset
+```{sql connection=dbcon}
+SELECT AVG((strftime('%Y', 'now') - strftime('%Y', BirthDate)) 
+       - (strftime('%m-%d', 'now') < strftime('%m-%d', BirthDate))) AS AvgAge
+  FROM employees;
+```
+
+# NOTE: only for testing age offset, not the answer of Q4
+```{sql connection=dbcon}
+SELECT EmployeeId, BirthDate, 
+  (strftime('%m-%d', 'now') < strftime('%m-%d', BirthDate)) AS Diff
+  FROM employees;
+```
+
+# Q5.What are the total number of unique customers for each US state (e.g., MA, CT, etc.), 
+# ordered alphabetically by state, who made at least one purchase 
+# (i.e., do not consider customers who never made a purchase)?
+```{sql connection=dbcon}
+SELECT c.State, COUNT(DISTINCT c.CustomerId) AS total FROM customers AS c
+  INNER JOIN invoices AS i ON c.CustomerId = i.CustomerId
+  GROUP BY c.State
+  HAVING c.State IS NOT NULL
+  ORDER BY c.State;
+```
+
+# NOTE: only for testing, not the answer of Q5
+```{sql connection=dbcon}
+SELECT DISTINCT c.CustomerId, c.State FROM customers AS c
+  INNER JOIN invoices AS i ON c.CustomerId = i.CustomerId
+  ORDER BY c.State;
+```
+
+# Q6.How many customers never made a purchase, 
+# i.e., they appear in the customers table but not in the invoices table.
+```{sql connection=dbcon}
+SELECT COUNT(CustomerId) AS total FROM customers
+  WHERE CustomerId NOT IN(SELECT DISTINCT CustomerId FROM invoices);
+```
+
+# NOTE: only for testing, not the answer of Q6
+```{sql connection=dbcon}
+SELECT DISTINCT i.CustomerId FROM invoices AS i;
+```
+
+# Q7.How many albums contain the substring "symphony" in the album title?
+# LIKE in Sqlite is case-insensitive by default
+# but can use lower() to convert title to lowercase
+```{sql connection=dbcon}
+SELECT COUNT(Title) AS total FROM albums
+  WHERE LOWER(Title) LIKE '%symphony%';
+```
+
+# Q8.What is the total "time" of all tracks per artist, 
+# i.e., add up the "Milliseconds" column in tracks? 
+# Display the artist's name and the time in hours rounded to two decimals.
+# artists with no tracks should also be displayed
+```{sql connection=dbcon}
+SELECT art.Name, ROUND(SUM(t.Milliseconds) * 2.778E-7, 2) AS Hours
+  FROM tracks AS t
+  INNER JOIN albums AS alb ON t.AlbumId = alb.AlbumId
+  INNER JOIN artists AS art ON alb.ArtistId = art.ArtistId
+  GROUP BY art.ArtistId
+  UNION
+  SELECT Name, 0.00 AS Hours FROM artists
+  WHERE ArtistId NOT IN(SELECT DISTINCT ArtistId FROM albums);
+```
+
+# Q8.What is the total "time" of all tracks per artist, 
+# i.e., add up the "Milliseconds" column in tracks? 
+# Display the artist's name and the time in hours rounded to two decimals.
+# artists with no tracks should also be displayed
+
+# use right join
+```{sql connection=dbcon}
+SELECT art.Name, ROUND(SUM(IFNULL(t.Milliseconds, 0)) * 2.778E-7, 2) AS Hours
+  FROM tracks AS t
+  INNER JOIN albums AS alb ON t.AlbumId = alb.AlbumId
+  RIGHT JOIN artists AS art ON alb.ArtistId = art.ArtistId
+  GROUP BY art.ArtistId
+  ORDER BY art.Name;
+```
+
+# Q9.Which artist(s) published the most tracks, 
+# regardless of type and format? List the artist(s) name(s).
+```{sql connection=dbcon}
+SELECT art.Name FROM tracks AS t
+  INNER JOIN albums AS alb ON t.AlbumId = alb.AlbumId
+  INNER JOIN artists AS art ON alb.ArtistId = art.ArtistId
+  GROUP BY art.ArtistId
+  HAVING COUNT(t.TrackId) = (SELECT MAX(total) 
+                              FROM (SELECT COUNT(t.trackId) AS total 
+                                      FROM tracks AS t
+                                      INNER JOIN albums AS alb ON t.AlbumId = alb.AlbumId
+                                      GROUP BY alb.ArtistId));
+```
+
+# NOTE: only for testing, not the answer of Q9
+```{sql connection=dbcon}
+SELECT MAX(total) 
+  FROM (SELECT COUNT(t.trackId) AS total FROM tracks AS t
+          INNER JOIN albums AS alb ON t.AlbumId = alb.AlbumId
+          GROUP BY alb.ArtistId);
+```
+
+# Q10.Which artists have composed tracks in more than three different genres? 
+# List the artists name and the number of distinct genres they have compositions in.
+```{sql connection=dbcon}
+SELECT art.Name, COUNT(DISTINCT t.GenreId) AS total FROM tracks AS t
+  INNER JOIN albums AS alb ON t.AlbumId = alb.AlbumId
+  INNER JOIN artists AS art ON alb.ArtistId = art.ArtistId
+  GROUP BY art.ArtistId
+  HAVING total > 3;
+```
+
+# NOTE: only for testing, not the answer of Q10
+```{sql connection=dbcon}
+SELECT DISTINCT art.Name, COUNT(DISTINCT t.GenreId) FROM tracks AS t
+  INNER JOIN albums AS alb ON t.AlbumId = alb.AlbumId
+  INNER JOIN artists AS art ON alb.ArtistId = art.ArtistId
+  GROUP BY art.ArtistId;
+```
+
+```{r}
+dbDisconnect(dbcon)
+```

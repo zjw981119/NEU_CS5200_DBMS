@@ -1,0 +1,13 @@
+"0","SELECT year, issn, title, total_articles
+  FROM (
+    WITH cte AS (
+      SELECT year, issn, title, SUM(article_count) AS total_articles
+      FROM journal_fact
+      GROUP BY year, issn, title
+    )
+    SELECT year, issn, title, total_articles,
+      ROW_NUMBER() OVER (PARTITION BY year ORDER BY total_articles DESC) AS rn
+    FROM cte
+  ) t
+  WHERE rn = 1
+  ORDER BY year ASC;"

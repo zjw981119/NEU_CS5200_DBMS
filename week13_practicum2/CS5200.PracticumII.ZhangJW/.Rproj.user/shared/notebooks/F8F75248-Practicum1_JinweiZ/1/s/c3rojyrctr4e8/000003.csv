@@ -1,0 +1,11 @@
+"0","```r
+
+# set the stat = 'identity' tells ggplot2 that the y-value is provided
+# instead of counting the # of rows for x-value
+# add column bar, data labels
+graph <- ggplot(rs, aes(x = year, y = total)) + geom_bar(stat='identity', width = 0.5) + geom_text(aes(label = total), vjust = -0.5)
+# add axis labels, titles
+graph <- graph + labs(title = 'Number of Bird Strikes Incidents from 2005 to 2011', 
+                      x = 'Year', y = 'Total Number of Incidents') 
+graph
+```"

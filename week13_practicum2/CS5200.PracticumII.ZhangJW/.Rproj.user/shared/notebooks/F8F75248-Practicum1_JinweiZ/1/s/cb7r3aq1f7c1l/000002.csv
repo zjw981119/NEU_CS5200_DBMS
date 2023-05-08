@@ -1,0 +1,8 @@
+"0","```sql
+SELECT flight_phase, COUNT(rid) AS total FROM incidents AS i
+  GROUP BY flight_phase
+  HAVING total > (SELECT AVG(cnt) 
+                    FROM (SELECT COUNT(rid) AS cnt 
+                            FROM incidents
+                            GROUP BY flight_phase) AS sub);
+```"

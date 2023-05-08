@@ -1,0 +1,5 @@
+"0","```r
+library(knitr)
+imageURL <- \"https://i.imgur.com/l3ng4N5.jpg\"
+knitr::include_graphics(imageURL)
+```"

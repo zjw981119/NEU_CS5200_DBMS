@@ -1,0 +1,6 @@
+"0","SELECT 
+  CONCAT(first_name, ' ', last_name) AS full_name,
+  article_count
+  FROM author_fact
+  ORDER BY article_count DESC, full_name ASC
+  LIMIT 10"

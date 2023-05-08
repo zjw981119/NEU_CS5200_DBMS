@@ -1,0 +1,4 @@
+"0","```sql
+SELECT MAX(cnt) FROM (SELECT COUNT(rid) AS cnt FROM incidents
+                        GROUP BY SUBSTR(flight_date, 6, 2)) AS sub;
+```"

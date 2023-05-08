@@ -1,0 +1,31 @@
+"0","```r
+library(DBI)
+library(RMySQL)
+# use readr to load csv file
+library(readr)
+# forces sqldf to use SQLite as its backing store
+library(sqldf)
+```"
+"1","Loading required package: gsubfn
+Loading required package: proto
+Warning: unable to load shared object '/Library/Frameworks/R.framework/Resources/modules//R_X11.so':
+  dlopen(/Library/Frameworks/R.framework/Resources/modules//R_X11.so, 0x0006): Library not loaded: /opt/X11/lib/libSM.6.dylib
+  Referenced from: /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/modules/R_X11.so
+  Reason: tried: '/opt/X11/lib/libSM.6.dylib' (no such file), '/usr/local/lib/libSM.6.dylib' (no such file), '/usr/lib/libSM.6.dylib' (no such file)tcltk DLL is linked to '/opt/X11/lib/libX11.6.dylib'
+Could not load tcltk.  Will use slower R code instead.
+Loading required package: RSQLite
+
+Attaching package: ‘RSQLite’
+
+The following object is masked from ‘package:RMySQL’:
+
+    isIdCurrent
+
+sqldf will default to using MySQL
+"
+"0","```r
+options(sqldf.driver = 'SQLite')
+
+dbcon <- dbConnect(MySQL(), user = 'root', password = 'root',
+                 dbname = 'bird_strike', host = 'localhost', port = 3306)
+```"
